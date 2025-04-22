@@ -39,7 +39,7 @@ def show_menu():
 
 # get tasks
 def get_tasks(session, user):
-    return session.query(Task).filter_by(user_id=user_id).all()
+    return session.query(Task).filter_by(user_id=user.id).all()
 
 # View tasks
 def view_tasks(session, user):
@@ -196,7 +196,7 @@ if __name__ == "__main__":
         show_menu()
         choice = input("Choose an option: ")
         if choice == "1":
-            view_tasks(session, user_id)
+            view_tasks(session, user)
         elif choice == "2":
             title = input("Enter task title: ")
             due_date = input("Enter due date (YYYY-MM-DD): ")
