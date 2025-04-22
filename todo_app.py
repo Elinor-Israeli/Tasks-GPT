@@ -58,7 +58,7 @@ def add_task(session, title, due_date, user: User):
             print("Invalid date format. Use YYYY-MM-DD.")
             return
             
-    new_task = Task(title=title, due_date=due_date, user_id=user_id)
+    new_task = Task(title=title, due_date=due_date, user_id=user.id)
     session.add(new_task)
     session.commit()
     print("Task added!")

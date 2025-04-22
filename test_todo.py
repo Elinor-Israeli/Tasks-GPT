@@ -55,7 +55,7 @@ def test_add_task(test_db):
     session, user = test_db
     title = "Write pytest test"
     due_date = "2025-04-30"
-    add_task(session, title, due_date, user.id)
+    add_task(session, title, due_date, user)
     task = session.query(Task).filter_by(title=title, user_id=user.id).first()
 
     assert task is not None
