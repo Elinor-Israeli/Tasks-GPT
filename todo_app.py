@@ -42,7 +42,7 @@ def get_tasks(session, user_id):
     return session.query(Task).filter_by(user_id=user_id).all()
 
 # View tasks
-def view_tasks(session, user):
+def view_tasks(session, user_id):
     tasks = get_tasks(session, user_id)
     for task in tasks:
         status = "✅" if task.done else "❌"
