@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual Environments
+.venv/
+venv/
+
+# Testing
+.pytest_cache/
+.mypy_cache/
+
+# VS Code settings (optional, if you use it)
+.vscode/
+
+# Environment files
+.env
+*.env
+
+# DB or local files (optional)
+*.db
