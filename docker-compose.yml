@@ -1,0 +1,30 @@
+services:
+  db:
+    image: postgres:14
+    container_name: my-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: elinor
+      POSTGRES_PASSWORD: elinor123
+      POSTGRES_DB: ToDoApp_db
+    ports:
+      - "5432:5432"
+    volumes:
+      -  postgres_data:/var/lib/postgresql/data
+
+  fastapi:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fastapi
+    restart: always
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgresql://elinor:elinor123@localhost:5432/ToDoApp_db
+    volumes: 
+      - ./backend:/app/backend
+volumes:
+  postgres_data:
