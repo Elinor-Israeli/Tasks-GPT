@@ -10,8 +10,9 @@ class TaskCreate(BaseModel):
 
 class TaskUpdate(BaseModel):
     title: Optional[str] = None
-    due_date: Optional[date] = None
     done:Optional[bool] = None
+    due_date: Optional[date] = None
+    
      
 class TaskResponse(TaskCreate):
     id: int

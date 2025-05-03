@@ -26,7 +26,7 @@ def get_task_by_id(db: Session, task_id: int):
     print(f"Query result: {task}")
     return task
 
-def delete_task(session: Session, task_id:int) -> None:
+def delete_task(session: Session, task_id:int, user_id:int) -> None:
     task = session.query(Task).filter_by(id=task_id).first()
 
     if not task:
@@ -38,11 +38,10 @@ def delete_task(session: Session, task_id:int) -> None:
     session.delete(task)
     session.commit()    
 
-def update_task(
+def updated_task(
     session: Session,
     task_id: int,
     title: Optional[str] = None,
-    description: Optional[str] = None,
     done: Optional[bool] = None,
     due_date: Optional[str] = None,
 ) -> Task:
@@ -56,8 +55,6 @@ def update_task(
 
     if title is not None:
         task.title = title
-    if description is not None:
-        task.description = description
     if done is not None:
         task.done = done
     if due_date is not None:

@@ -27,7 +27,6 @@ class TaskHttpService:
 
     async def create_task(self, task_data: dict):
         response = await self.client.post("/tasks/", json=task_data)
-        # response.raise_for_status()
         return response.json()
 
     async def update_task(self, task_id: int, task_data: dict):
