@@ -23,7 +23,7 @@ services:
     depends_on:
       - db
     environment:
-      DATABASE_URL: postgresql://elinor:elinor123@localhost:5432/ToDoApp_db
+      DATABASE_URL: postgresql://elinor:elinor123@my-postgres:5432/ToDoApp_db
     volumes: 
       - ./backend:/app/backend
 volumes:

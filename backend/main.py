@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from backend.controllers import task_controller, user_controller
-from backend.models.models import init_db
+from backend.services.database import init_db
 
 app = FastAPI()
 

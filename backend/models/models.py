@@ -1,9 +1,6 @@
 from sqlalchemy import Column, Integer, String, Date, Boolean, ForeignKey
 from sqlalchemy.orm import relationship
-from backend.database import engine, Base
-
-def init_db():
-    Base.metadata.create_all(bind=engine)
+from backend.services.database import Base
     
 class User(Base):
     __tablename__ = 'users'
