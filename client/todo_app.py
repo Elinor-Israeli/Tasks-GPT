@@ -40,15 +40,22 @@ def show_menu():
 async def get_tasks(user_id):
     return await task_service.get_tasks(user_id)
 
-async def view_tasks(task_service, user_id, choice=None):
-    if choice is None:
-        print("\nWhat kind of Tasks would you like to view? ")
-        print("1. Complete Tasks")
-        print("2. Incomplete Tasks")
-        print("3. Overdue Tasks")
-        print("4. Upcoming Tasks")
-        print("5. All Tasks")
+async def view_tasks(task_service, user_id, user_input, genai_client, choice=None):
+    view_option = """
+    1. Completed Tasks
+    2. Incomplete Tasks
+    3. Overdue Tasks
+    4. Upcoming Tasks
+    5. All Tasks
+    """
+    view_types = genai_client.interpret_view_task_command(user_input,  view_option)
+
+    if view_types is None:
+        print("what kind of tasks would you like to see?")
+        print(view_option)
         choice = input("Choose an option: ")
+    else: 
+        choice = view_types
 
     if choice == "1":
         tasks = await task_service.get_tasks(user_id=user_id, done=True)
@@ -77,7 +84,7 @@ async def view_tasks(task_service, user_id, choice=None):
     elif choice == "5":
         tasks = await task_service.get_tasks(user_id=user_id)
     else:
-        tasks = await get_tasks_from_service(user_id=user_id)
+        tasks = await task_service.get_tasks(user_id=user_id)
 
     for task in tasks:
         status = "✅" if task['done'] else "❌"
@@ -96,7 +103,7 @@ async def add_task(task_service, title, due_date, user_id):
     print("Task added!")
 
 # Edit task 
-async def edit_task(task_service, user_id, task_id=None, choice=None, new_title=None, new_due_date=None):
+async def edit_task(task_service, user_id, user_input, genai_client, task_id=None,  new_title=None, new_due_date=None):
     if task_id is None:
         task_id = input("Enter task ID to edit: ")
 
@@ -109,16 +116,21 @@ async def edit_task(task_service, user_id, task_id=None, choice=None, new_title=
     print(f"Current title: {task['title']}")
     print(f"Current due date: {task.get('due_date', 'None')}")
 
-    if choice is None:
-        print("\nWhat would you like to edit?")
-        print("1. Title")
-        print("2. Due Date")
-        print("3. Both")
-        print("4. Cancel")
-        choice = input("Choose an option: ")
+    edit_options =  """
+    1. Title
+    2. Due Date
+    3. Both
+    4. Cancel
+    """
+    edit_types = genai_client.interpret_edit_task_command(user_input, edit_options)
 
     data = {}
-
+    if edit_types == "none":
+        print("what would you like to edit?")
+        print(edit_options)
+        choice = input("Choose an option: ")
+    else: 
+        choice = edit_types
     if choice == "1":
         data["title"] = new_title or input("Enter new title: ")
         print("Title updated!")
@@ -189,7 +201,7 @@ async def main():
         user_input = input("What would you like to do? ")
         choice = genai_client.interpret_command(user_input, options)
         if choice == MenuChoice.VIEW_TASKS:
-            await view_tasks(task_service, user_id)
+            await view_tasks(task_service, user_id, user_input, genai_client)
         elif choice == MenuChoice.ADD_TASK:
             title = input("Enter task title: ")
             due_date = input("Enter due date (YYYY-MM-DD): ")
@@ -199,9 +211,7 @@ async def main():
         elif choice == MenuChoice.DELETE_TASK:
             await delete_task(task_service, task_id=None)  
         elif choice == MenuChoice.EDIT_TASK:
-            await edit_task(task_service, user_id)     
-        elif choice == MenuChoice.EXIT:
-            break
+            await edit_task(task_service, user_id, user_input, genai_client)     
         else:
             print("Invalid option. Try again!")
 
