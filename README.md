@@ -38,7 +38,8 @@ cd tasks-gpt
 2. Configure environment variables
    
 A .env file is a plain text file used to store environment variables — configuration settings your app needs, like API keys, database credentials, and other secrets — in key=value format. You will need to store the Gemini API key that you can get from this [link](https://ai.google.dev/gemini-api/docs/api-key?hl=he "link") in `client/.env` in the format shown below.
-Do not commit the .env file to GitHub (.env is in .gitignore to prevent it from happening).
+> [!CAUTION]
+> Do not commit the .env file to GitHub (.env is in .gitignore to prevent it from happening).
 
 ```
 GENAI_API_KEY=your_api_key
