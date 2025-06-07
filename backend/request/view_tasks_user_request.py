@@ -1,11 +1,13 @@
 from datetime import datetime, date
-
 class ViewTasksUserRequest:
-    def __init__(self, choice):
+    def __init__(self, user_id, task_service, genai_client, choice):
+        self.user_id = user_id
+        self.task_service = task_service
+        self.genai_client = genai_client
         self.choice = choice
-    
+
     @classmethod
-    def create(cls, genai_client, user_input: str):
+    def create(cls, user_id, task_service, genai_client, user_input: str):
         view_option = """
         1. Completed Tasks
         2. Incomplete Tasks
@@ -15,11 +17,10 @@ class ViewTasksUserRequest:
         """
         view_types = genai_client.interpret_view_task_command(user_input, view_option)
         choice = view_types if view_types else input("Choose an option:\n" + view_option + "\n")
-        return ViewTasksUserRequest(choice)
+        return ViewTasksUserRequest(user_id, task_service, genai_client, choice)
 
-    async def handle(self, task_service ):
+    async def handle(self):
         today = date.today()
-        tasks = []
 
         if self.choice == "1":
             tasks = await self.task_service.get_tasks(user_id=self.user_id, done=True)
@@ -46,7 +47,6 @@ class ViewTasksUserRequest:
             print("No tasks found for this option.")
             return
 
-        # SORT newest first
         tasks = sorted(tasks, key=lambda x: x['id'], reverse=True)
 
         print("\n--- TASKS ---")
