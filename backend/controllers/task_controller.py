@@ -17,11 +17,10 @@ def get_tasks_route(
     return get_tasks(db, user_id, done=done, due_date=due_date)
 
 @router.get("/{task_id}", response_model=TaskResponse)
-def get_task_by_id_route(
-    task_id: int,
-    db: Session = Depends(get_db)
-):
+def get_task_by_id_route(task_id: int, db: Session = Depends(get_db)):
     task = get_task_by_id(db, task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
     return task
 
 @router.post("/", response_model=TaskResponse)
@@ -29,8 +28,12 @@ def add_task(task: TaskCreate, db: Session = Depends(get_db)):
     return create_task(db, task)
 
 @router.delete("/{task_id}")
-def delete_task_route(task_id: int, db: Session = Depends(get_db)):
-    delete_task(db, task_id)
+def delete_task_route(
+    task_id: int,
+    user_id: int = Query(..., description="ID of the user deleting the task"),
+    db: Session = Depends(get_db)
+):
+    delete_task(db, task_id, user_id)
     return {"message": "Task deleted successfully."}
 
 @router.put("/{task_id}", response_model=TaskResponse)
