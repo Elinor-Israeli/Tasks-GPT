@@ -1,50 +1,39 @@
-from datetime import datetime, date
-class ViewTasksUserRequest:
-    def __init__(self, user_id, task_service, genai_client, choice):
-        self.user_id = user_id
-        self.task_service = task_service
-        self.genai_client = genai_client
+from backend.request.user_request import UserRequest
+from client.menus import view_options
+from utils.logger import logger
+
+class ViewTasksUserRequest(UserRequest):
+    def __init__(self, user_id, choice):
+        super().__init__(user_id)
         self.choice = choice
 
     @classmethod
-    def create(cls, user_id, task_service, genai_client, user_input: str):
-        view_option = """
-        1. Completed Tasks
-        2. Incomplete Tasks
-        3. Overdue Tasks
-        4. Upcoming Tasks
-        5. All Tasks
-        """
-        view_types = genai_client.interpret_view_task_command(user_input, view_option)
-        choice = view_types if view_types else input("Choose an option:\n" + view_option + "\n")
-        return ViewTasksUserRequest(user_id, task_service, genai_client, choice)
+    def create(cls, user_id, genai_client, user_input: str):
+        view_types = genai_client.interpret_view_task_command(user_input, view_options)
+        choice = view_types if view_types else input("Choose an option:\n" + view_options + "\n").strip()
 
-    async def handle(self):
-        today = date.today()
+        if not choice or choice not in {"1", "2", "3", "4", "5"}:
+            logger.info("Invalid choice. Please try again.")
+            return None
 
+        return ViewTasksUserRequest(user_id, choice)
+
+    async def handle(self, task_service):
         if self.choice == "1":
-            tasks = await self.task_service.get_tasks(user_id=self.user_id, done=True)
+            tasks = await task_service.get_tasks(user_id=self.user_id, done=True)
         elif self.choice == "2":
-            tasks = await self.task_service.get_tasks(user_id=self.user_id, done=False)
+            tasks = await task_service.get_tasks(user_id=self.user_id, done=False)
         elif self.choice == "3":
-            tasks = await self.task_service.get_tasks(user_id=self.user_id)
-            tasks = [
-                task for task in tasks
-                if not task['done'] and task.get('due_date') and datetime.fromisoformat(task['due_date']).date() < today
-            ]
+            tasks = await task_service.get_tasks(user_id=self.user_id, overdue=True)
         elif self.choice == "4":
-            tasks = await self.task_service.get_tasks(user_id=self.user_id)
-            tasks = [
-                task for task in tasks
-                if not task['done'] and task.get('due_date') and datetime.fromisoformat(task['due_date']).date() >= today
-            ]
+            tasks = await task_service.get_tasks(user_id=self.user_id, upcoming=True)
         elif self.choice == "5":
-            tasks = await self.task_service.get_tasks(user_id=self.user_id)
+            tasks = await task_service.get_tasks(user_id=self.user_id)
         else:
-            tasks = await self.task_service.get_tasks(user_id=self.user_id)
+            tasks = await task_service.get_tasks(user_id=self.user_id)
 
         if not tasks:
-            print("No tasks found for this option.")
+            logger.info("No tasks found for this option.")
             return
 
         tasks = sorted(tasks, key=lambda x: x['id'], reverse=True)

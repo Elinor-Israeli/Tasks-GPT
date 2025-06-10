@@ -12,7 +12,7 @@ class User(Base):
 class Task(Base):
     __tablename__ = 'tasks'
     id = Column(Integer, primary_key=True, index=True)
-    title = Column(String, nullable=False)
+    title = Column(String, nullable=False, unique=True)
     due_date = Column(Date)
     done = Column(Boolean, default=False)
     user_id = Column(Integer, ForeignKey('users.id'))

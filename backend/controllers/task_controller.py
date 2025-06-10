@@ -11,10 +11,11 @@ router = APIRouter()
 def get_tasks_route(
     user_id: int = Query(..., description="ID of the user to retrieve tasks for"),
     done: Optional[bool] = Query(None, description="Filter tasks by completion status"),
-    due_date: Optional[str] = Query(None, description="Filter tasks by due date (YYYY-MM-DD)"),
+    overdue: Optional[bool] = Query(False, description="Filter overdue tasks"),
+    upcoming: Optional[bool] = Query(False, description="Filter upcoming tasks"),
     db: Session = Depends(get_db)
 ):
-    return get_tasks(db, user_id, done=done, due_date=due_date)
+    return get_tasks(db, user_id, done=done, overdue=overdue, upcoming=upcoming)
 
 @router.get("/{task_id}", response_model=TaskResponse)
 def get_task_by_id_route(task_id: int, db: Session = Depends(get_db)):
@@ -30,10 +31,9 @@ def add_task(task: TaskCreate, db: Session = Depends(get_db)):
 @router.delete("/{task_id}")
 def delete_task_route(
     task_id: int,
-    user_id: int = Query(..., description="ID of the user deleting the task"),
     db: Session = Depends(get_db)
 ):
-    delete_task(db, task_id, user_id)
+    delete_task(db, task_id)
     return {"message": "Task deleted successfully."}
 
 @router.put("/{task_id}", response_model=TaskResponse)

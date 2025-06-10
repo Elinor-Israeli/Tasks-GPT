@@ -1,27 +1,29 @@
 from datetime import datetime
-
-class EditTaskUserRequest:
-    def __init__(self, user_id, task_service, genai_client, task_id, choice):
-        self.user_id = user_id
-        self.task_service = task_service
-        self.genai_client = genai_client
+from backend.request.user_request import UserRequest
+from utils.logger import logger
+class EditTaskUserRequest(UserRequest):
+    def __init__(self, user_id, task_id, choice):
+        super().__init__(user_id)
         self.task_id = task_id
         self.choice = choice
     
     @classmethod
     async def create(cls, user_id, task_service, genai_client, user_input):
-        task_id = genai_client.extract_task_id(user_input)
-        print(f"[DEBUG] AI extracted task_id={task_id}")
+        data = genai_client.extract_task_id_or_title(user_input)
+        task_id = data.get("task_id")
+        task_title = data.get("task_title")
+
+        logger.debug(f"AI extracted task_id={task_id}, task_title={task_title}")
 
         if not task_id:
-            task_id = input("Enter task ID to edit: ")
+            task_id = input("Enter task ID to edit: ").strip()
 
         task = await task_service.get_task_by_id(task_id)
         if not task:
-            print("Task not found.")
+            logger.info("Task not found.")
             return None
 
-        print(f"\nEditing Task {task['id']} - {task['title']}")
+        logger.info(f"\nEditing Task {task['id']} - {task['title']}")
 
         edit_options = """
         1. Title
@@ -31,11 +33,12 @@ class EditTaskUserRequest:
         """
 
         edit_types = genai_client.interpret_edit_task_command(user_input, edit_options)
-        choice = edit_types if edit_types else input("Choose an option:\n" + edit_options + "\n")
+        choice = edit_types if edit_types else input("Choose an option:\n" + edit_options + "\n").strip()
 
-        return EditTaskUserRequest(user_id, task_service, genai_client, task_id, choice)
+        return EditTaskUserRequest(user_id, task_id, choice)
 
-    async def handle(self):
+
+    async def handle(self, task_service):
         data = {}
 
         if self.choice == "1":
@@ -46,7 +49,7 @@ class EditTaskUserRequest:
                 datetime.strptime(new_due_date, "%Y-%m-%d")
                 data["due_date"] = new_due_date
             except ValueError:
-                print("Invalid date format. Please use YYYY-MM-DD.")
+                logger.info("Invalid date format. Please use YYYY-MM-DD.")
                 return
         elif self.choice == "3":
             data["title"] = input("Enter new title: ")
@@ -55,11 +58,11 @@ class EditTaskUserRequest:
                 datetime.strptime(new_due_date, "%Y-%m-%d")
                 data["due_date"] = new_due_date
             except ValueError:
-                print("Invalid date format. Please use YYYY-MM-DD.")
+                logger.info("Invalid date format. Please use YYYY-MM-DD.")
                 return
         else:
-            print("Edit cancelled.")
+            logger.info("Edit cancelled.")
             return
 
-        await self.task_service.update_task(int(self.task_id), data)
-        print("Task updated!")
+        await task_service.update_task(int(self.task_id), data)
+        logger.info("Task updated!")

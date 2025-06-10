@@ -7,16 +7,19 @@ class TaskHttpService:
     def __init__(self, client: HttpClient):
         self.client = client
 
-    async def get_tasks(self, user_id: int, done: Optional[bool] = None, due_date: Optional[str] = None):
-        params = {}
-        if user_id is not None:
-            params["user_id"] = user_id
+    async def get_tasks(self, user_id, done=None, overdue=False, upcoming=False):
+        params = {"user_id": user_id}
+
         if done is not None:
             params["done"] = done
-        if due_date:
-            params["due_date"] = due_date
 
-        response = await self.client.get(f"/tasks/", params=params)
+        if overdue:
+            params["overdue"] = True
+
+        if upcoming:
+            params["upcoming"] = True
+
+        response = await self.client.get("/tasks/", params=params)
         response.raise_for_status()
         return response.json()
 
@@ -38,7 +41,7 @@ class TaskHttpService:
         response = await self.client.delete(f"/tasks/{task_id}")
         response.raise_for_status()
         return response.status_code == 204
-
+    
     async def close(self):
         await self.client.aclose()
 

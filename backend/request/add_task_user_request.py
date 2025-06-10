@@ -1,40 +1,52 @@
+import httpx
+from utils.logger import logger
 from datetime import datetime
+from backend.request.user_request import UserRequest
 
-class AddTaskUserRequest:
-    def __init__(self, user_id, task_service, genai_client, title, due_date):
-        self.user_id = user_id
-        self.task_service = task_service
-        self.genai_client = genai_client
+class AddTaskUserRequest(UserRequest):
+    def __init__(self, user_id, title, due_date):
+        super().__init__(user_id)
         self.title = title  
         self.due_date = due_date 
 
     @classmethod
-    def create(cls, user_id, task_service, genai_client, user_input:str):
+    def create(cls, user_id, genai_client, user_input:str):
         extraction = genai_client.extract_task_data(user_input)
         title = extraction.get("name")
         due_date = extraction.get("date")
 
-        print(f"[DEBUG] AI extracted: title={title}, date={due_date}")
+        logger.debug(f"AI extracted: title={title}, date={due_date}")
 
         if not title:
-            title = input("Enter task title: ")
+            title = input("You need to enter a title in order to add a task, please try again ").strip()
+            if not title:
+                logger.info("Task title is required. you'll need to write one in order to add a task ")
+                return None
+
 
         if not due_date or due_date.lower() == "none":
-            due_date = input("Enter due date (YYYY-MM-DD): ")
-
-        return AddTaskUserRequest(user_id, task_service, genai_client, title, due_date)
-
-    async def handle(self):
-            try:
-                datetime.strptime(self.due_date, "%Y-%m-%d")
-                await self.task_service.create_task({
-                    "title": self.title,
-                    "due_date": self.due_date,
-                    "user_id": self.user_id
-                })
-                print("Task added!")
-                return
-            except ValueError:
-                print("Invalid date format. Task not added.")
-
+            due_date = input("Enter due date (YYYY-MM-DD): ").strip()
         
+        try:
+            parsed_date = datetime.strptime(due_date, "%Y-%m-%d")
+            due_date = parsed_date.strftime("%Y-%m-%d")
+        except ValueError:
+            logger.info("Invalid date format.Please use YYYY-MM-DD. Task not added.")
+            return None
+
+        return AddTaskUserRequest(user_id, title, due_date)
+
+    async def handle(self, task_service):
+        try:
+            await task_service.create_task({
+                "title": self.title,
+                "due_date": self.due_date,
+                "user_id": self.user_id
+            })
+            logger.info(f"Task '{self.title}' added with due date {self.due_date}!")
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 400:
+                error_detail = e.response.json().get("detail", "Unknown error")
+                logger.error(f"Failed to add task: {error_detail}")
+            else:
+                logger.error(f"Unexpected error while adding task: {e}")    

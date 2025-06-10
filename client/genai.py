@@ -1,9 +1,11 @@
 from google import genai
 from typing import Optional, Union
-from client.menu_choice import MenuChoice
+from client.menus import MenuChoice
 import json
 from datetime import date
 import time
+import re
+from utils.logger import logger
 
 class AICommandInterpreter:
     def __init__(self, api_key: str, model: str = "gemini-2.0-flash"):
@@ -46,27 +48,8 @@ Now process this command:
 "{command}"
 """ 
 
-    def interpret_command(self, user_input: str, options: Optional[str] = None) -> MenuChoice:
-        if options:
-            prompt = self.prompt_template.format(command=user_input, options=options)
-        else:
-            prompt = """
-You are an AI system that understands user commands in natural language.
-You support the following 5 task types:
-
-1. Extraction - extract task name and date from the sentence → return JSON: {"name": .., "date": ..}
-2. Search - embeddings search
-3. Planning
-4. Most urgent
-5. Break down big task into smaller tasks
-
-You will be given a textual command from a user.
-Your job is to return the task type number (1 to 5),  
-or "None" if it does not match any of the supported tasks.
-
-Now process this command:
-"{command}"
-""".format(command=user_input)
+    def interpret_command(self, user_input: str, options: Optional[str]) -> MenuChoice:
+        prompt = self.prompt_template.format(command=user_input, options=options)
 
         MAX_RETRIES = 3
         for attempt in range(MAX_RETRIES):
@@ -76,7 +59,7 @@ Now process this command:
                     contents=[prompt]
                 )
                 result = response.text.strip()
-                print(f"[DEBUG] interpret_command result: {result}")
+                logger.debug(f"interpret_command result: {result}")
 
                 try:
                     return MenuChoice(result)
@@ -84,14 +67,13 @@ Now process this command:
                     return MenuChoice.NONE
 
             except Exception as e:
-                print(f"[ERROR] Gemini API call failed (attempt {attempt + 1}): {e}")
-                if attempt < MAX_RETRIES - 1:
-                    wait_time = 2 ** attempt
-                    print(f"Retrying in {wait_time} seconds...")
-                    time.sleep(wait_time)
-                else:
-                    print("Max retries reached. Returning NONE.")
-                    return MenuChoice.NONE
+                logger.error(f"Gemini API call failed (attempt {attempt + 1}): {e}")
+                wait_time = 2 ** attempt
+                logger.info(f"Retrying in {wait_time} seconds...")
+                time.sleep(wait_time)
+
+        logger.info("Max retries reached. Returning NONE.")
+        return MenuChoice.NONE
 
     def interpret_view_task_command(self, user_input: str, view_options: str) -> Union[str, None]:
         prompt = self.prompt_template_view_task.format(command=user_input, view_options=view_options)
@@ -102,11 +84,11 @@ Now process this command:
                 contents=[prompt]
             )
             result = response.text.strip().lower()
-            print(f"[DEBUG] interpret_view_task_command result: {result}")
+            logger.debug(f"interpret_view_task_command result: {result}")
             return result
 
         except Exception as e:
-            print(f"[ERROR] Gemini API call failed: {e}")
+            logger.error(f"Gemini API call failed: {e}")
             return None
 
     def interpret_edit_task_command(self, user_input: str, edit_options: str) -> Union[str, None]:
@@ -118,11 +100,11 @@ Now process this command:
                 contents=[prompt]
             )
             result = response.text.strip().lower()
-            print(f"[DEBUG] interpret_edit_task_command result: {result}")
+            logger.debug(f"interpret_edit_task_command result: {result}")
             return result
 
         except Exception as e:
-            print(f"[ERROR] Gemini API call failed: {e}")
+            logger.error(f"Gemini API call failed: {e}")
             return None
 
     def extract_task_data(self, user_input: str) -> dict:
@@ -172,17 +154,70 @@ Now return ONLY the JSON:
             )
             result = response.text.strip()
 
-            print(f"[DEBUG] extract_task_data raw result: {result}")
+            logger.debug(f"extract_task_data raw result: {result}")
+
+            result_clean = re.sub(r"^```json\s*|```$", "", result.strip(), flags=re.MULTILINE)
 
             try:
-                extracted_data = json.loads(result)
-            except Exception:
+                extracted_data = json.loads(result_clean)
+            except Exception as e:
+                logger.debug(f"JSON parse failed: {e}")
                 extracted_data = {"name": None, "date": None}
 
-            print(f"[DEBUG] extract_task_data parsed: {extracted_data}")
+            logger.debug(f"extract_task_data parsed: {extracted_data}")
 
             return extracted_data
 
         except Exception as e:
-            print(f"[ERROR] Gemini API call failed: {e}")
+            logger.error(f"Gemini API call failed: {e}")
             return {"name": None, "date": None}
+
+    def extract_task_id_or_title(self, user_input: str) -> dict:
+        prompt = f"""
+    You are an expert AI assistant. The user wants to select a task to mark as done.
+
+    Extract EITHER the TASK ID (number) OR the TASK TITLE (string) from this command:
+
+    "{user_input}"
+
+    Return a VALID JSON in this exact format:
+
+    {{
+        "task_id": 123,      // If the user said a task ID. If no ID, set to null.
+        "task_title": "..."  // If the user said a title. If no title, set to null.
+    }}
+
+    IMPORTANT:
+    - If both are mentioned, return both.
+    - If neither is mentioned, set both to null.
+
+    Now return ONLY the JSON.
+    """
+
+        try:
+            response = self.client.models.generate_content(
+                model=self.model,
+                contents=[prompt]
+            )
+            result = response.text.strip()
+
+            logger.debug(f"extract_task_id_or_title raw result: {result}")
+
+            import re
+            result_clean = re.sub(r"^```json\s*|```$", "", result.strip(), flags=re.MULTILINE)
+
+            try:
+                parsed = json.loads(result_clean)
+            except Exception as e:
+                logger.debug(f"JSON parse failed: {e}")
+                parsed = {"task_id": None, "task_title": None}
+
+            logger.debug(f"extract_task_id_or_title parsed: {parsed}")
+
+            return parsed
+
+        except Exception as e:
+            logger.error(f"Gemini API call failed: {e}")
+            return {"task_id": None, "task_title": None}
+
+        
