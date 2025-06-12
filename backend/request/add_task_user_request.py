@@ -2,6 +2,7 @@ import httpx
 from utils.logger import logger
 from datetime import datetime
 from backend.request.user_request import UserRequest
+from client.genai import AICommandInterpreter
 
 class AddTaskUserRequest(UserRequest):
     def __init__(self, user_id, title, due_date):
@@ -10,28 +11,34 @@ class AddTaskUserRequest(UserRequest):
         self.due_date = due_date 
 
     @classmethod
-    def create(cls, user_id, genai_client, user_input:str):
+    def create(cls, user_id, genai_client: AICommandInterpreter, user_input: str):
+
         extraction = genai_client.extract_task_data(user_input)
         title = extraction.get("name")
         due_date = extraction.get("date")
 
         logger.debug(f"AI extracted: title={title}, date={due_date}")
 
-        if not title:
-            title = input("You need to enter a title in order to add a task, please try again ").strip()
-            if not title:
-                logger.info("Task title is required. you'll need to write one in order to add a task ")
-                return None
+        while not title or title.lower() == "none":
+            user_input = input("Great! enter your task title and due date : ").strip()
+            extraction = genai_client.extract_task_data(user_input)
+            title = extraction.get("name")
+            due_date = extraction.get("date")
+            logger.debug(f"Re-extracted: title={title}, date={due_date}")
 
+        while not due_date or due_date.lower() == "none":
+            user_input = input("Enter due date or include it in a full sentence (e.g., 'Walk dog next week'): ").strip()
+            extraction = genai_client.extract_task_data(user_input)
+            if not title and extraction.get("name"):
+                title = extraction.get("name")
+            due_date = extraction.get("date")
+            logger.debug(f"Re-extracted: title={title}, date={due_date}")
 
-        if not due_date or due_date.lower() == "none":
-            due_date = input("Enter due date (YYYY-MM-DD): ").strip()
-        
         try:
             parsed_date = datetime.strptime(due_date, "%Y-%m-%d")
             due_date = parsed_date.strftime("%Y-%m-%d")
         except ValueError:
-            logger.info("Invalid date format.Please use YYYY-MM-DD. Task not added.")
+            logger.info("Invalid date format. Please use YYYY-MM-DD. Task not added.")
             return None
 
         return AddTaskUserRequest(user_id, title, due_date)
@@ -49,4 +56,4 @@ class AddTaskUserRequest(UserRequest):
                 error_detail = e.response.json().get("detail", "Unknown error")
                 logger.error(f"Failed to add task: {error_detail}")
             else:
-                logger.error(f"Unexpected error while adding task: {e}")    
+                logger.error(f"Unexpected error while adding task: {e}")

@@ -1,26 +1,41 @@
 from datetime import datetime
 from backend.request.user_request import UserRequest
 from utils.logger import logger
+
 class EditTaskUserRequest(UserRequest):
     def __init__(self, user_id, task_id, choice):
         super().__init__(user_id)
         self.task_id = task_id
         self.choice = choice
-    
+
     @classmethod
     async def create(cls, user_id, task_service, genai_client, user_input):
-        data = genai_client.extract_task_id_or_title(user_input)
+        data = genai_client.extract_task_id_or_title_to_edit(user_input)
         task_id = data.get("task_id")
         task_title = data.get("task_title")
 
         logger.debug(f"AI extracted task_id={task_id}, task_title={task_title}")
 
-        if not task_id:
-            task_id = input("Enter task ID to edit: ").strip()
+        if not task_id and (not task_title or task_title.lower() == "none"):
+            user_input = input("Great! You want to edit a task. Please enter a title or task ID to edit: ").strip()
+            data = genai_client.extract_task_id_or_title_to_edit(user_input)
+            task_id = data.get("task_id")
+            task_title = data.get("task_title")
 
-        task = await task_service.get_task_by_id(task_id)
-        if not task:
-            logger.info("Task not found.")
+        task = None
+        if task_id:
+            task = await task_service.get_task_by_id(task_id)
+            if not task:
+                logger.info("Task not found by ID.")
+                return None
+        elif task_title and task_title.lower() != "none":
+            task = await task_service.get_task_by_title(task_title)
+            if not task:
+                logger.info("Task not found by title.")
+                return None
+            task_id = task["id"]
+        else:
+            logger.info("No valid task ID or title provided.")
             return None
 
         logger.info(f"\nEditing Task {task['id']} - {task['title']}")
@@ -36,7 +51,6 @@ class EditTaskUserRequest(UserRequest):
         choice = edit_types if edit_types else input("Choose an option:\n" + edit_options + "\n").strip()
 
         return EditTaskUserRequest(user_id, task_id, choice)
-
 
     async def handle(self, task_service):
         data = {}
