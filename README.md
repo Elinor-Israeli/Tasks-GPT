@@ -29,7 +29,7 @@ Tasks GPT is a smart, AI-powered to-do list application that integrates natural 
 
 - Test: Using Pytest
 
-### 📦 Setup Instructions
+### Setup Instructions
 1. Clone the repo
 ```
 git clone https://github.com/Elinor-Israeli/tasks-gpt.git
