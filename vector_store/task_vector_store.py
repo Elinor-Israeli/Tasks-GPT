@@ -30,6 +30,7 @@ class TaskVectorStore(Addable, Searchable, Removable):
 
 
     def search(self, query: str, user_id:int, top_k: int = 5):
+        logger.debug(f"Embedding and searching for query='{query}' (user_id={user_id})")
         vector = self.embedder.embed(query)
 
         user_filter = Filter(
@@ -41,12 +42,15 @@ class TaskVectorStore(Addable, Searchable, Removable):
             ]
         ) 
 
-        return self.client.search(
+        results = self.client.search(
             collection_name = self.collection_name,
             query_vector=vector,
             query_filter=user_filter,
             limit=top_k
-        )  
+        ) 
+
+        logger.info(f"Search completed: query='{query}', top_k={top_k}, user_id={user_id}, results={len(results)}")
+        return results
 
     def remove(self, task_id: int, user_id: int):
         self.client.delete(
@@ -58,6 +62,9 @@ class TaskVectorStore(Addable, Searchable, Removable):
                 ]
             )
         )
+
+        logger.debug(f"Task removal issued for task_id={task_id}, user_id={user_id}")
+
 
            
 

@@ -45,7 +45,8 @@ class UserRequestFactory:
                 self.user_id,
                 self.task_service,
                 self.genai_client,
-                user_input
+                user_input,
+                vector_searcher=self.vector_store
             )
         else:
             return None
