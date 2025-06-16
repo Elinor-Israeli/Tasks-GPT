@@ -3,6 +3,7 @@ from qdrant_client import QdrantClient
 from .embedder import TextEmbedder
 from .interfaces import Addable, Searchable, Removable 
 from uuid import uuid4
+from utils.logger import logger
 
 class TaskVectorStore(Addable, Searchable, Removable):
     def __init__(self, client: QdrantClient, embedder: TextEmbedder, collection_name: str ="tasks"):
@@ -12,6 +13,8 @@ class TaskVectorStore(Addable, Searchable, Removable):
 
     def add(self, task_id: int, title: str, user_id: int):
         vector = self.embedder.embed(title)
+        logger.debug(f"Storing vector for task_id={task_id}, title='{title}', user_id={user_id}")
+
         point = PointStruct(
             id = uuid4().int >> 64, #generate 64-bit int ID
             vector=vector,
@@ -23,6 +26,7 @@ class TaskVectorStore(Addable, Searchable, Removable):
         )
 
         self.client.upsert(collection_name=self.collection_name, points=[point])
+        logger.info(f"Vector for task '{title}' added to Qdrant.")
 
 
     def search(self, query: str, user_id:int, top_k: int = 5):

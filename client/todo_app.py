@@ -9,6 +9,12 @@ from backend.request.user_request import UserRequest
 from backend.factory.user_request_factory import UserRequestFactory
 from client.http_services.http_client import HttpClient
 
+from vector_store.interfaces import Addable
+from vector_store.qdrant_client import QdrantManager
+from vector_store.embedder import TextEmbedder
+from vector_store.task_vector_store import TaskVectorStore
+
+
 from client.genai import AICommandInterpreter
 from client.menus import MenuChoice
 
@@ -40,9 +46,16 @@ async def main():
     task_service = TaskHttpService(http_client)
     genai_client = AICommandInterpreter(api_key=GEMINI_API_KEY)
 
+    qdrant = QdrantManager()
+    embedder = TextEmbedder()
+    vector_store = TaskVectorStore(client=qdrant.get_client(), embedder=embedder)
+
     user_id = await login_or_signup(user_service)
 
-    while True:
+    factory = UserRequestFactory(task_service, user_service, genai_client, user_id, vector_store)
+
+
+    while True:    
         print("\n--- To-Do List ---\n")
         options = """
         1. View Tasks
@@ -55,13 +68,11 @@ async def main():
 
         user_input = input("What would you like to do? ").strip()
 
-        choice = genai_client.interpret_command(user_input, options) #DONE return an error if choice us none
+        choice = genai_client.interpret_command(user_input, options) 
 
         if choice == MenuChoice.NONE:
             print("I'm sorry, I didn't understand you how could I help you?")
 
-        factory = UserRequestFactory(task_service, user_service, genai_client, user_id)
-        
         request: UserRequest = await factory.create_request(choice, user_input)
         if not request:
             logger.error("Invalid option or command not understood. Please try again.")
