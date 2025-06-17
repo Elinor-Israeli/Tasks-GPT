@@ -1,6 +1,6 @@
 import pytest
 from dotenv import load_dotenv
-from genai import AICommandInterpreter
+from client.genai import AICommandInterpreter
 import os
 
 @pytest.fixture
