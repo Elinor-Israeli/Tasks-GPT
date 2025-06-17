@@ -11,7 +11,7 @@ from client.http_services.http_client import HttpClient
 
 from vector_store.interfaces import AddableVectorStore
 from vector_store.qdrant_client import get_qdrant_client
-from vector_store.embedder import TextEmbedder
+from vector_store.text_embedder import TextEmbedder
 from vector_store.task_vector_store import TaskVectorStore
 
 

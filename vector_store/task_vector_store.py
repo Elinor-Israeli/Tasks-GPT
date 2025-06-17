@@ -1,6 +1,6 @@
 from qdrant_client.http.models import PointStruct, Filter, FieldCondition, MatchValue
 from qdrant_client import QdrantClient
-from .embedder import TextEmbedder
+from .text_embedder import TextEmbedder
 from .interfaces import AddableVectorStore, SearchableVectorStore, RemovableVectorStore 
 from uuid import uuid4
 from utils.logger import logger
