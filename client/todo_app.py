@@ -62,7 +62,7 @@ async def main():
 
 
     while True:
-        # TODO: wrap anything here inside try-except
+      try:
         print("\n--- To-Do List ---\n")
         options = """
         1. View Tasks
@@ -87,6 +87,11 @@ async def main():
             continue
         
         await request.handle(task_service, vector_store)
+      except KeyboardInterrupt:
+          print("\nExiting TaskGPT, Goodbye!")
+      except Exception as e:
+        logger.error(f"Unexpected error occurred: {e}")
+        print("⚠️ Something went wrong. Please try again.")   
             
 
 if __name__ == "__main__":
