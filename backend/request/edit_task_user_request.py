@@ -24,7 +24,6 @@ class EditTaskUserRequest(UserRequest):
             task_title = input("What task would you like to edit?\n").strip()
 
         if not task_id and task_title:
-            # TODO: refactor and move this shared piece of code to another function
             results = vector_searcher.search(query=task_title, user_id=user_id, top_k=3)
             if results:
                 print("\nDid you mean one of these tasks?")
@@ -61,10 +60,20 @@ class EditTaskUserRequest(UserRequest):
         title = self.extracted_data.get("title")
         if title:
             data["title"] = title
-        # TODO: change the embedding of the title in the vector store
+            vector_store.add(
+            task_id=int(self.task_id),
+            title=title,
+            user_id=self.user_id
+            )
 
         due_date = self.extracted_data.get("due_date")
         if due_date:
+            data["title"] = title
+            vector_store.add(
+            task_id=int(self.task_id),
+            due_date=due_date,
+            user_id=self.user_id
+            )
             try:
                 datetime.strptime(due_date, "%Y-%m-%d")
                 data["due_date"] = due_date

@@ -53,8 +53,6 @@ class AddTaskUserRequest(UserRequest):
                 "user_id": self.user_id
             })
 
-            #TODO: raise excption when the title already 
-
             vector_adder.add(
                 task_id=task["id"],
                 title=self.title,
@@ -62,9 +60,14 @@ class AddTaskUserRequest(UserRequest):
             )
 
             logger.info(f"Task '{self.title}' added with due date {self.due_date}!")
+
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 400:
                 error_detail = e.response.json().get("detail", "Unknown error")
+
+                if "already exists" in error_detail.lower():
+                    raise ValueError("A task with this title already exists.")
+
                 logger.error(f"Failed to add task: {error_detail}")
             else:
                 logger.error(f"Unexpected error while adding task: {e}")

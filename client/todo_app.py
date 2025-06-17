@@ -60,39 +60,41 @@ async def main():
 
     factory = UserRequestFactory(task_service, user_service, genai_client, user_id, vector_store)
 
-
+    
     while True:
-      try:
-        print("\n--- To-Do List ---\n")
-        options = """
-        1. View Tasks
-        2. Add Task
-        3. Mark Task as Done
-        4. Delete Task
-        5. Edit Task
-        """
-        print(options)
+        try:
+            print("\n--- To-Do List ---\n")
+            options = """
+            1. View Tasks
+            2. Add Task
+            3. Mark Task as Done
+            4. Delete Task
+            5. Edit Task
+            """
+            print(options)
 
-        user_input = input("What would you like to do? ").strip()
+            user_input = input("What would you like to do? ").strip()
 
-        choice = genai_client.interpret_command(user_input, options) 
+            choice = genai_client.interpret_command(user_input, options) 
 
-        if choice == MenuChoice.NONE:
-            print("I'm sorry, I didn't understand you how could I help you?")
-            continue
+            if choice == MenuChoice.NONE:
+                print("I'm sorry, I didn't understand you how could I help you?")
+                continue
 
-        request: UserRequest = await factory.create_request(choice, user_input)
-        if not request:
-            logger.error("Invalid option or command not understood. Please try again.")
-            continue
-        
-        await request.handle(task_service, vector_store)
-      except KeyboardInterrupt:
-          print("\nExiting TaskGPT, Goodbye!")
-      except Exception as e:
-        logger.error(f"Unexpected error occurred: {e}")
-        print("⚠️ Something went wrong. Please try again.")   
+            request: UserRequest = await factory.create_request(choice, user_input)
+
+            if not request:
+                logger.error("Invalid option or command not understood. Please try again.")
+                continue
             
-
+            await request.handle(task_service, vector_store)
+        
+        except Exception as e:
+            logger.error(f"Unexpected error occurred: {e}")
+            print("⚠️ Something went wrong. Please try again.")   
+    
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("\nExiting TaskGPT. Goodbye!")
