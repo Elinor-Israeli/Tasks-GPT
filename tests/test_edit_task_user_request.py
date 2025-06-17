@@ -1,43 +1,42 @@
 import pytest
+from unittest.mock import AsyncMock, MagicMock, patch
 from backend.request.edit_task_user_request import EditTaskUserRequest
-
-class MockTaskService:
-    def __init__(self):
-        self.updated_tasks = {}
-
-    async def get_task_by_id(self, task_id):
-        return {"id": int(task_id), "title": "Old title", "due_date": "2025-06-01"}
-
-    async def update_task(self, task_id, data):
-        self.updated_tasks[task_id] = data
-
-class MockGenAIClient:
-    def extract_task_id(self, user_input):
-        return 5 
-
-    def interpret_edit_task_command(self, user_input, edit_options):
-        return "1"
 
 @pytest.mark.asyncio
 async def test_edit_task_user_request_handle(monkeypatch):
-    mock_task_service = MockTaskService()
-    mock_genai_client = MockGenAIClient()
-    user_id = 123
-    user_input = "edit task 5"
+    mock_task_service = AsyncMock()
+    mock_vector_searcher = MagicMock()
+    mock_genai_client = MagicMock()
 
-    monkeypatch.setattr("builtins.input", lambda prompt: "New Task Title")
+    mock_genai_client.extract_task_id_or_title_to_edit.return_value = {
+        "task_id": 42,
+        "task_title": None
+    }
+
+    mock_task_service.get_task_by_id.return_value = {
+        "id": 42,
+        "title": "Buy groceries",
+        "user_id": 1
+    }
+
+    monkeypatch.setattr("builtins.input", lambda _: "Change title to Buy bread and due date to 2025-07-10")
+
+    mock_genai_client.extract_edit_task_data.return_value = {
+        "title": "Buy bread",
+        "due_date": "2025-07-10"
+    }
 
     request = await EditTaskUserRequest.create(
-        user_id,
-        mock_task_service,
-        mock_genai_client,
-        user_input
+        user_id=1,
+        task_service=mock_task_service,
+        genai_client=mock_genai_client,
+        user_input="edit task 42",
+        vector_searcher=mock_vector_searcher
     )
 
-    assert request is not None
+    await request.handle(mock_task_service)
 
-    await request.handle()
-
-    assert 5 in mock_task_service.updated_tasks
-    updated_data = mock_task_service.updated_tasks[5]
-    assert updated_data["title"] == "New Task Title"
+    mock_task_service.update_task.assert_awaited_once_with(
+        42,
+        {"title": "Buy bread", "due_date": "2025-07-10"}
+    )

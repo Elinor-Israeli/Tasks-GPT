@@ -1,42 +1,33 @@
 import pytest
+from unittest.mock import AsyncMock, MagicMock
 from backend.request.view_tasks_user_request import ViewTasksUserRequest
 
-class MockTaskService:
-    def __init__(self):
-        self.tasks = [
-            {"id": 1, "title": "Task 1", "done": True, "due_date": "2025-06-01"},
-            {"id": 2, "title": "Task 2", "done": False, "due_date": "2025-06-10"},
-            {"id": 3, "title": "Task 3", "done": True, "due_date": None},
-        ]
-
-    async def get_tasks(self, user_id, done=None):
-        if done is None:
-            return self.tasks
-        else:
-            return [task for task in self.tasks if task["done"] == done]
-
-class MockGenAIClient:
-    def interpret_view_task_command(self, user_input, view_option):
-        return "1" 
-
 @pytest.mark.asyncio
-async def test_view_tasks_user_request_handle(capfd):
-    mock_task_service = MockTaskService()
-    mock_genai_client = MockGenAIClient()
-    user_id = 123
-    user_input = "view completed tasks"
+async def test_view_tasks_user_request_completed(monkeypatch, capsys):
+    mock_task_service = AsyncMock()
+    mock_genai_client = MagicMock()
+
+    mock_genai_client.interpret_view_task_command.return_value = "1"
+
+    mock_task_service.get_tasks.return_value = [
+        {"id": 2, "title": "Finish homework", "done": True, "due_date": "2025-07-01"},
+        {"id": 1, "title": "Submit report", "done": True, "due_date": None}
+    ]
 
     request = ViewTasksUserRequest.create(
-        user_id,
-        mock_task_service,
-        mock_genai_client,
-        user_input
+        user_id=1,
+        genai_client=mock_genai_client,
+        user_input="Show me completed tasks"
     )
 
-    await request.handle()
+    assert request is not None
+    assert request.choice == "1"
 
-    out, err = capfd.readouterr()
+    await request.handle(mock_task_service)
 
-    assert "--- TASKS ---" in out
-    assert "Task 1" in out
-    assert "✅" in out
+    captured = capsys.readouterr()
+    assert "--- TASKS ---" in captured.out
+    assert "2. Finish homework (Due: 2025-07-01) - ✅" in captured.out
+    assert "1. Submit report  - ✅" in captured.out
+
+    mock_task_service.get_tasks.assert_awaited_once_with(user_id=1, done=True)

@@ -1,32 +1,33 @@
 import pytest
+from unittest.mock import AsyncMock, MagicMock
 from backend.request.delete_task_user_request import DeleteTaskUserRequest
 
-class MockTaskService:
-    def __init__(self):
-        self.deleted_tasks = []
-
-    async def delete_task(self, task_id):
-        self.deleted_tasks.append(task_id)
-
-class MockGenAIClient:
-    def extract_task_id(self, user_input):
-        return 4   
-
 @pytest.mark.asyncio
-async def test_delete_task_user_request_handle():
-    mock_task_service = MockTaskService()
-    mock_genai_client = MockGenAIClient()
-    user_id = 123
-    user_input = "delete task 4"
+async def test_delete_task_by_id():
+    mock_task_service = AsyncMock()
+    mock_vector_searcher = MagicMock()
+    mock_genai_client = MagicMock()
 
-    request = DeleteTaskUserRequest.create(
-        user_id,
-        mock_task_service,
-        mock_genai_client,
-        user_input
+    mock_genai_client.extract_task_id_or_title.return_value = {
+        "task_id": 42,
+        "task_title": None
+    }
+
+    mock_task_service.get_task_by_id.return_value = {
+        "id": 42,
+        "title": "Take out trash",
+        "user_id": 1
+    }
+
+    request = await DeleteTaskUserRequest.create(
+        user_id=1,
+        genai_client=mock_genai_client,
+        user_input="delete task 42",
+        task_service=mock_task_service,
+        vector_searcher=mock_vector_searcher
     )
 
-    await request.handle()
+    await request.handle(mock_task_service)
 
-    assert len(mock_task_service.deleted_tasks) == 1
-    assert mock_task_service.deleted_tasks[0] == 4
+    mock_task_service.delete_task.assert_awaited_once_with(42)
+    mock_vector_searcher.remove.assert_called_once_with(task_id=42, user_id=1)
