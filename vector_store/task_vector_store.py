@@ -1,11 +1,11 @@
 from qdrant_client.http.models import PointStruct, Filter, FieldCondition, MatchValue
 from qdrant_client import QdrantClient
 from .embedder import TextEmbedder
-from .interfaces import Addable, Searchable, Removable 
+from .interfaces import AddableVectorStore, SearchableVectorStore, RemovableVectorStore 
 from uuid import uuid4
 from utils.logger import logger
 
-class TaskVectorStore(Addable, Searchable, Removable):
+class TaskVectorStore(AddableVectorStore, SearchableVectorStore, RemovableVectorStore):
     def __init__(self, client: QdrantClient, embedder: TextEmbedder, collection_name: str ="tasks"):
         self.client = client
         self.embedder = embedder
@@ -29,7 +29,7 @@ class TaskVectorStore(Addable, Searchable, Removable):
         logger.info(f"Vector for task '{title}' added to Qdrant.")
 
 
-    def search(self, query: str, user_id:int, top_k: int = 5):
+    def search(self, query: str, user_id: int, top_k: int = 5):
         logger.debug(f"Embedding and searching for query='{query}' (user_id={user_id})")
         vector = self.embedder.embed(query)
 

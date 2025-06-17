@@ -1,5 +1,5 @@
 from client.menus import MenuChoice
-from vector_store.interfaces import Addable
+from vector_store.interfaces import AddableVectorStore
 from backend.request.add_task_user_request import AddTaskUserRequest
 from backend.request.edit_task_user_request import EditTaskUserRequest
 from backend.request.view_tasks_user_request import ViewTasksUserRequest
@@ -25,8 +25,7 @@ class UserRequestFactory:
             return AddTaskUserRequest.create(
                 self.user_id,
                 self.genai_client,
-                user_input,
-                vector_store=self.vector_store
+                user_input
             )
         elif choice == MenuChoice.MARK_DONE:
             return MarkDoneUserRequest.create(
@@ -41,7 +40,6 @@ class UserRequestFactory:
                 self.user_id,
                 self.genai_client,
                 user_input,
-                self.task_service,
                 vector_searcher=self.vector_store
             )
         elif choice == MenuChoice.EDIT_TASK:

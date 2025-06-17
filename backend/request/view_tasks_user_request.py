@@ -1,14 +1,15 @@
 from backend.request.user_request import UserRequest
 from client.menus import view_options
 from utils.logger import logger
-
+from client.genai import AICommandInterpreter
+from client.http_services.task_http_service import TaskHttpService
 class ViewTasksUserRequest(UserRequest):
     def __init__(self, user_id, choice):
         super().__init__(user_id)
         self.choice = choice
 
     @classmethod
-    def create(cls, user_id, genai_client, user_input: str):
+    def create(cls, user_id, genai_client:AICommandInterpreter, user_input: str):
         view_types = genai_client.interpret_view_task_command(user_input, view_options)
         choice = view_types if view_types else input("Choose an option:\n" + view_options + "\n").strip()
 
@@ -18,7 +19,7 @@ class ViewTasksUserRequest(UserRequest):
 
         return ViewTasksUserRequest(user_id, choice)
 
-    async def handle(self, task_service):
+    async def handle(self, task_service: TaskHttpService, *args):
         if self.choice == "1":
             tasks = await task_service.get_tasks(user_id=self.user_id, done=True)
         elif self.choice == "2":

@@ -3,16 +3,18 @@ from utils.logger import logger
 from datetime import datetime
 from backend.request.user_request import UserRequest
 from client.genai import AICommandInterpreter
-from vector_store.interfaces import Addable
+from vector_store.interfaces import AddableVectorStore
+from client.http_services.task_http_service import TaskHttpService
+
+
 class AddTaskUserRequest(UserRequest):
-    def __init__(self, user_id, title, due_date, vector_store):
+    def __init__(self, user_id: int, title: str, due_date: str):
         super().__init__(user_id)
         self.title = title  
         self.due_date = due_date
-        self.vector_store = vector_store 
 
     @classmethod
-    def create(cls, user_id, genai_client: AICommandInterpreter, user_input: str, vector_store):
+    def create(cls, user_id: int, genai_client: AICommandInterpreter, user_input: str):
         extraction = genai_client.extract_task_data(user_input)
         title = extraction.get("name")
         due_date = extraction.get("date")
@@ -41,9 +43,9 @@ class AddTaskUserRequest(UserRequest):
             logger.info("Invalid date format. Please use YYYY-MM-DD. Task not added.")
             return None
 
-        return AddTaskUserRequest(user_id, title, due_date, vector_store)
+        return AddTaskUserRequest(user_id, title, due_date)
 
-    async def handle(self, task_service):
+    async def handle(self, task_service: TaskHttpService, vector_adder: AddableVectorStore):
         try:
             task = await task_service.create_task({
                 "title": self.title,
@@ -51,7 +53,9 @@ class AddTaskUserRequest(UserRequest):
                 "user_id": self.user_id
             })
 
-            self.vector_store.add(
+            #TODO: raise excption when the title already 
+
+            vector_adder.add(
                 task_id=task["id"],
                 title=self.title,
                 user_id=self.user_id

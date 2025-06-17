@@ -1,16 +1,18 @@
 from backend.request.user_request import UserRequest
 from utils.logger import logger
-from vector_store.interfaces import Searchable
+from vector_store.interfaces import SearchableVectorStore, RemovableVectorStore
+from client.http_services.task_http_service import TaskHttpService
+from client.genai import AICommandInterpreter
+
 
 class DeleteTaskUserRequest(UserRequest):
-    def __init__(self, user_id, task_id=None, task_title=None, vector_searcher: Searchable = None):
+    def __init__(self, user_id, task_id=None, task_title=None):
         super().__init__(user_id)
         self.task_id = task_id
         self.task_title = task_title
-        self.vector_searcher = vector_searcher
 
     @classmethod
-    async def create(cls, user_id, genai_client, user_input, task_service, vector_searcher: Searchable):
+    async def create(cls, user_id:int, genai_client:AICommandInterpreter, user_input: str, vector_searcher: SearchableVectorStore):
         max_attempts = 3
         attempt = 0
         task_id = None 
@@ -44,9 +46,9 @@ class DeleteTaskUserRequest(UserRequest):
         if not (task_id or task_title):
             raise Exception("Failed to identify the task to delete after multiple attempts. Please try again later.")        
 
-        return DeleteTaskUserRequest(user_id, task_id, task_title, vector_searcher)
+        return DeleteTaskUserRequest(user_id, task_id, task_title)
 
-    async def handle(self, task_service):
+    async def handle(self, task_service: TaskHttpService, vector_remover: RemovableVectorStore):
         task = None
 
         if self.task_id:
@@ -67,8 +69,7 @@ class DeleteTaskUserRequest(UserRequest):
             await task_service.delete_task(task["id"])
             logger.info(f"Task '{task['title']}' deleted!")
 
-            if self.vector_searcher:
-                self.vector_searcher.remove(task_id=task["id"], user_id=self.user_id)
-                logger.debug(f"Removed task {task['id']} from vector store.")
+            vector_remover.remove(task_id=task["id"], user_id=self.user_id)
+            logger.debug(f"Removed task {task['id']} from vector store.")
         else:
             logger.info("Task not found.")

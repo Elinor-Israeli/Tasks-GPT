@@ -1,15 +1,17 @@
 from backend.request.user_request import UserRequest
 from utils.logger import logger
-from vector_store.interfaces import Searchable
+from vector_store.interfaces import SearchableVectorStore
+from client.genai import AICommandInterpreter
+from client.http_services.task_http_service import TaskHttpService
+
+
 class MarkDoneUserRequest(UserRequest):
-    def __init__(self, user_id, task_id, task_title, vector_searcher: Searchable):
+    def __init__(self, user_id, task_id):
         super().__init__(user_id)
         self.task_id = task_id 
-        self.task_title = task_title 
-        self.vector_searcher = vector_searcher
 
     @classmethod
-    def create(cls, user_id, genai_client, user_input, vector_searcher):
+    def create(cls, user_id: int, genai_client: AICommandInterpreter, user_input: str, vector_searcher: SearchableVectorStore):
         data = genai_client.extract_task_id_or_title(user_input)
 
         task_id = data.get("task_id")
@@ -34,28 +36,11 @@ class MarkDoneUserRequest(UserRequest):
                     print("Canceled or invalid choice.")
                     return None
 
-        return MarkDoneUserRequest(user_id, task_id, task_title, vector_searcher)
+        return MarkDoneUserRequest(user_id, task_id)
     
-    async def handle(self, task_service):
-        task = None
-
-        if self.task_id:
-            logger.debug(f"Marking task by ID: {self.task_id}")
-            task = await task_service.get_task_by_id(self.task_id)
-
-        elif self.task_title:
-            logger.debug(f"Searching for task by title: {self.task_title}")
-            tasks = await task_service.get_tasks(user_id=self.user_id)
-            matching_tasks = [
-                t for t in tasks
-                if t["title"].strip().lower() == self.task_title.strip().lower()
-            ]
-            if matching_tasks:
-                task = matching_tasks[0]
-
-        else:
-            logger.error("Could not identify task from input.")
-            return
+    async def handle(self, task_service: TaskHttpService, *args):
+        logger.debug(f"Marking task by ID: {self.task_id}")
+        task = await task_service.get_task_by_id(self.task_id)
 
         if task:
             await task_service.update_task(task["id"], {"done": True})

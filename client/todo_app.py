@@ -9,8 +9,8 @@ from backend.request.user_request import UserRequest
 from backend.factory.user_request_factory import UserRequestFactory
 from client.http_services.http_client import HttpClient
 
-from vector_store.interfaces import Addable
-from vector_store.qdrant_client import QdrantManager
+from vector_store.interfaces import AddableVectorStore
+from vector_store.qdrant_client import get_qdrant_client
 from vector_store.embedder import TextEmbedder
 from vector_store.task_vector_store import TaskVectorStore
 
@@ -26,7 +26,7 @@ if not GEMINI_API_KEY:
     logger.error("ERROR: GEMINI_API_KEY not found! Please set it in your .env file.")
     exit(1)
 
-async def login_or_signup(user_service):
+async def login_or_signup(user_service: UserHttpService):
     print("\n--- Login or Signup ---")
     username = input("Enter your username: ").strip()
     user = await user_service.get_user_by_username(username)
@@ -37,25 +37,32 @@ async def login_or_signup(user_service):
     else:
         password = input("Please enter your password: ")
         new_user = await user_service.create_user({"username": username, "password": password})
-        logger.info(f"Welcome to TaskGPT {new_user['username']}!")
+        print(f"Welcome to TaskGPT {new_user['username']}!")
         return new_user['id']
 
 async def main():
+    logger.debug("initialize http client")
     http_client = HttpClient()
     user_service = UserHttpService(http_client)
     task_service = TaskHttpService(http_client)
+
+    logger.debug("initialize genai client")
     genai_client = AICommandInterpreter(api_key=GEMINI_API_KEY)
 
-    qdrant = QdrantManager()
+    logger.debug("initialize qdrant client")
+    qdrant_client = get_qdrant_client()
+    logger.debug("initialize text embedder")
     embedder = TextEmbedder()
-    vector_store = TaskVectorStore(client=qdrant.get_client(), embedder=embedder)
+
+    vector_store = TaskVectorStore(client=qdrant_client, embedder=embedder)
 
     user_id = await login_or_signup(user_service)
 
     factory = UserRequestFactory(task_service, user_service, genai_client, user_id, vector_store)
 
 
-    while True:    
+    while True:
+        # TODO: wrap anything here inside try-except
         print("\n--- To-Do List ---\n")
         options = """
         1. View Tasks
@@ -72,13 +79,14 @@ async def main():
 
         if choice == MenuChoice.NONE:
             print("I'm sorry, I didn't understand you how could I help you?")
+            continue
 
         request: UserRequest = await factory.create_request(choice, user_input)
         if not request:
             logger.error("Invalid option or command not understood. Please try again.")
             continue
         
-        await request.handle(task_service)
+        await request.handle(task_service, vector_store)
             
 
 if __name__ == "__main__":

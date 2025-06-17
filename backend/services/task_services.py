@@ -15,8 +15,9 @@ def create_task(db: Session, task_data: TaskCreate):
         db.refresh(new_task)
         return new_task
     
-    except IntegrityError:
+    except IntegrityError as e:
         db.rollback()
+        # TODO: figure out the exact exception from e and raise accordingly
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="A task with this title already exists."
