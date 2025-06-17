@@ -32,13 +32,17 @@ class UserRequestFactory:
             return MarkDoneUserRequest.create(
                 self.user_id,
                 self.genai_client,
-                user_input
+                user_input,
+                vector_searcher=self.vector_store
+
             )
         elif choice == MenuChoice.DELETE_TASK:
-            return DeleteTaskUserRequest.create(
+            return await DeleteTaskUserRequest.create(
                 self.user_id,
                 self.genai_client,
-                user_input
+                user_input,
+                self.task_service,
+                vector_searcher=self.vector_store
             )
         elif choice == MenuChoice.EDIT_TASK:
             return await EditTaskUserRequest.create(

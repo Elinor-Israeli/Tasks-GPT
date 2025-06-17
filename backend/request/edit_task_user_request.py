@@ -2,12 +2,11 @@ from datetime import datetime
 from backend.request.user_request import UserRequest
 from utils.logger import logger
 from vector_store.interfaces import Searchable
-from qdrant_client.http.models import Filter, FieldCondition, MatchValue
 class EditTaskUserRequest(UserRequest):
-    def __init__(self, user_id, task_id, choice, vector_searcher: Searchable):
+    def __init__(self, user_id, task_id,extracted_data, vector_searcher: Searchable):
         super().__init__(user_id)
         self.task_id = task_id
-        self.choice = choice
+        self.extracted_data = extracted_data
         self.vector_searcher = vector_searcher
 
     @classmethod
@@ -46,46 +45,30 @@ class EditTaskUserRequest(UserRequest):
 
         logger.info(f"\nEditing Task {task['id']} - {task['title']}")
 
-        edit_options = """
-        1. Title
-        2. Due Date
-        3. Both
-        4. Cancel
-        """
-
-        edit_types = genai_client.interpret_edit_task_command(user_input, edit_options)
-        if not edit_types or edit_types.lower() == "none":
-            choice = input("What would you like to edit?\n" + edit_options + "\n").strip()
-        else:
-            choice = edit_types
-
-        return EditTaskUserRequest(user_id, task_id, choice, vector_searcher)
+        task_title = task.get('title', 'this task')
+        user_input = input(f"Great! You want to edit '{task_title}'. Enter your changes: ").strip()
+        extracted = genai_client.extract_edit_task_data(user_input)
+        logger.debug(f"Extracted update data: {extracted}")
+        return EditTaskUserRequest(user_id, task_id, extracted, vector_searcher)
 
 
     async def handle(self, task_service):
         data = {}
+        title = self.extracted_data.get("title")
+        if title:
+            data["title"] = title
 
-        if self.choice == "1":
-            data["title"] = input("Enter new title: ")
-        elif self.choice == "2":
-            new_due_date = input("Enter new due date (YYYY-MM-DD): ")
+        due_date = self.extracted_data.get("due_date")
+        if due_date:
             try:
-                datetime.strptime(new_due_date, "%Y-%m-%d")
-                data["due_date"] = new_due_date
+                datetime.strptime(due_date, "%Y-%m-%d")
+                data["due_date"] = due_date
             except ValueError:
                 logger.info("Invalid date format. Please use YYYY-MM-DD.")
                 return
-        elif self.choice == "3":
-            data["title"] = input("Enter new title: ")
-            new_due_date = input("Enter new due date (YYYY-MM-DD): ")
-            try:
-                datetime.strptime(new_due_date, "%Y-%m-%d")
-                data["due_date"] = new_due_date
-            except ValueError:
-                logger.info("Invalid date format. Please use YYYY-MM-DD.")
-                return
-        else:
-            logger.info("Edit cancelled.")
+
+        if not data:
+            logger.info("No valid update data found.")
             return
 
         await task_service.update_task(int(self.task_id), data)

@@ -6,10 +6,12 @@ from datetime import date
 import time
 import re
 from utils.logger import logger
+
 class AICommandInterpreter:
     def __init__(self, api_key: str, model: str = "gemini-2.0-flash"):
         self.client = genai.Client(api_key=api_key)
         self.model = model
+
         self.prompt_template = """
 You are an AI system that understands user commands in natural language.
 You support the following options:
@@ -22,6 +24,7 @@ or "None" if it does not match any of the supported options.
 Now process this command:
 "{command}"
 """
+
         self.prompt_template_view_task = """
 You are an AI system that understands user commands in natural language. The user chose to view his tasks. Now you need to understand what kind of task type he wants to view:
 
@@ -31,8 +34,8 @@ Your job is to return the task type number (1 to 5), or "None" if it does not ma
 Now process this command:
 
 "{command}"
-
 """ 
+
         self.prompt_template_edit_task = """
 You are an AI system that understands user commands in natural language. The user chose to edit his tasks. Now you need to understand what he wants to edit:
 
@@ -42,8 +45,8 @@ Your job is to return the task type number (1 to 4), or "None" if it does not ma
 Now process this command:
 
 "{command}"
-
 """ 
+
     def interpret_command(self, user_input: str, options: Optional[str]) -> MenuChoice:
         prompt = self.prompt_template.format(command=user_input, options=options)
         MAX_RETRIES = 3
@@ -99,7 +102,7 @@ Now process this command:
         except Exception as e:
             logger.error(f"Gemini API call failed: {e}")
             return None
-        
+
     def extract_task_data(self, user_input: str) -> dict:
         today_str = date.today().strftime("%Y-%m-%d")
         extraction_prompt = f"""
@@ -158,6 +161,43 @@ Now return ONLY the JSON
             logger.error(f"Gemini API call failed: {e}")
             return {"name": None, "date": None}
 
+    def extract_edit_task_data(self, user_input: str) -> dict:
+        today_str = date.today().strftime("%Y-%m-%d")
+        prompt = f"""
+Today is {today_str}.
+
+You are an expert AI assistant that helps update tasks. The user gave you a sentence describing what they want to change about a task.
+
+Extract the following from the sentence:
+- New task title (if they want to change it)
+- New due date (if they want to change it)
+
+Return this JSON format exactly:
+{{
+    "title": "new title here or null",
+    "due_date": "YYYY-MM-DD or null"
+}}
+
+If the user does not want to change a field, return null for it.
+
+Now process this sentence:
+"{user_input}"
+
+Return ONLY the JSON.
+"""
+        try:
+            response = self.client.models.generate_content(
+                model=self.model,
+                contents=[prompt]
+            )
+            result = response.text.strip()
+
+            result_clean = re.sub(r"^```json\s*|```$", "", result.strip(), flags=re.MULTILINE)
+            return json.loads(result_clean)
+        except Exception as e:
+            logger.error(f"Failed to extract edit task data: {e}")
+            return {"title": None, "due_date": None}
+
     def extract_task_id_or_title(self, user_input: str) -> dict:
         prompt = f"""
     You are an expert AI assistant. The user wants to select a task to mark as done.
@@ -194,8 +234,9 @@ Now return ONLY the JSON
         except Exception as e:
             logger.error(f"Gemini API call failed: {e}")
             return {"task_id": None, "task_title": None}
-        
+
     def extract_task_id_or_title_to_edit(self, user_input: str) -> dict:
+        today_str = date.today().strftime("%Y-%m-%d")
         prompt = f"""
     You are an expert AI assistant. The user wants to select a task to edit.
     Extract EITHER the TASK ID (number) OR the TASK TITLE (string) from this command:
@@ -211,6 +252,18 @@ Now return ONLY the JSON
     - If both are mentioned, return both.
     - If neither is mentioned, set both to null.
     - Please note that vague tasks like "edit a task" or "edit a title" or "change a due date" or "change the title" are not titles. Only consider real task descriptions as titles. If not, return "None" as title.
+
+    - Understand dates in ANY FORMAT:
+    * "2025/06/05"
+    * "06/05/2025"
+    * "next Monday"
+    * "tomorrow"
+    * "in two weeks"
+    * "on July 1st"
+    * "this Friday"
+    * "next week"
+    * "next month"
+    - Normalize ALL dates to "YYYY-MM-DD" using the current date (Today is {today_str}).
     Now return ONLY the JSON.
     """
         try:
@@ -231,6 +284,4 @@ Now return ONLY the JSON
         
         except Exception as e:
             logger.error(f"Gemini API call failed: {e}")
-            return {"task_id": None, "task_title": None}    
-
-        
+            return {"task_id": None, "task_title": None}
