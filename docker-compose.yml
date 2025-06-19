@@ -13,11 +13,11 @@ services:
     volumes:
       -  postgres_data:/var/lib/postgresql/data
 
-  fastapi:
+  api:
     build:
-      context: .
+      context: ./backend/api
       dockerfile: Dockerfile
-    container_name: fastapi
+    container_name: api
     restart: always
     ports:
       - "8000:8000"
@@ -26,7 +26,7 @@ services:
     environment:
       DATABASE_URL: postgresql://elinor:elinor123@my-postgres:5432/ToDoApp_db
     volumes: 
-      - ./backend:/app/backend
+      - ./backend/api:/app
   qdrant:
     image: qdrant/qdrant
     container_name: qdrant

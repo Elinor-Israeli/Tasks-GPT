@@ -51,7 +51,7 @@ docker-compose up --build
 4. Run the CLI
 ```
 cd client
-python todo_app.py
+python main.py
 
 ```
 

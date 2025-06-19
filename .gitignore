@@ -11,6 +11,9 @@ venv/
 .pytest_cache/
 .mypy_cache/
 
+# qdrant docker volume
+qdrant_data
+
 # VS Code settings (optional, if you use it)
 .vscode/
 
