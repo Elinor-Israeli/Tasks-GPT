@@ -1,11 +1,11 @@
 from google import genai
 from typing import Optional, Union
-from utils.menus import MenuChoice
+from src.utils.menus import MenuChoice
 import json
 from datetime import date
 import time
 import re
-from utils.logger import logger
+from src.utils.logger import logger
 
 class AICommandInterpreter:
     def __init__(self, api_key: str, model: str = "gemini-2.0-flash"):

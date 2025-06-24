@@ -3,7 +3,7 @@ from qdrant_client import QdrantClient
 from .text_embedder import TextEmbedder
 from .interfaces import AddableVectorStore, SearchableVectorStore, RemovableVectorStore 
 from uuid import uuid4
-from utils.logger import logger
+from src.utils.logger import logger
 
 class TaskVectorStore(AddableVectorStore, SearchableVectorStore, RemovableVectorStore):
     def __init__(self, client: QdrantClient, embedder: TextEmbedder, collection_name: str ="tasks"):

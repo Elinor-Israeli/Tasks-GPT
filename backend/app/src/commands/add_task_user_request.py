@@ -1,19 +1,22 @@
-import httpx
-from utils.logger import logger
 from datetime import datetime
-from .user_request import UserRequest
-from genai import AICommandInterpreter
-from vector_store.interfaces import AddableVectorStore
-from http_services.task_http_service import TaskHttpService
 
+import httpx
+
+from src.communicator import Communicator
+from src.genai import AICommandInterpreter
+from src.http_services.task_http_service import TaskHttpService
+from src.utils.logger import logger
+from src.vector_store.interfaces import AddableVectorStore
+from .user_request import UserRequest
 class AddTaskUserRequest(UserRequest):
-    def __init__(self, user_id: int, title: str, due_date: str):
+    def __init__(self, user_id: int, title: str, due_date: str, communicator:Communicator):
         super().__init__(user_id)
         self.title = title  
         self.due_date = due_date
+        self.communicator = communicator
 
     @classmethod
-    def create(cls, user_id: int, genai_client: AICommandInterpreter, user_input: str):
+    async def create(cls, user_id: int, genai_client: AICommandInterpreter, user_input: str, communicator: Communicator):
         extraction = genai_client.extract_task_data(user_input)
         title = extraction.get("name")
         due_date = extraction.get("date")
@@ -21,14 +24,14 @@ class AddTaskUserRequest(UserRequest):
         logger.debug(f"AI extracted: title={title}, date={due_date}")
 
         while not title or title.lower() == "none":
-            user_input = input("Great! enter your task title and due date : ").strip()
+            user_input = (await communicator.input("Great! enter your task title and due date : ")).strip()
             extraction = genai_client.extract_task_data(user_input)
             title = extraction.get("name")
             due_date = extraction.get("date")
             logger.debug(f"Re-extracted: title={title}, date={due_date}")
 
         while not due_date or due_date.lower() == "none":
-            user_input = input("Enter due date or include it in a full sentence (e.g., 'Walk dog next week'): ").strip()
+            user_input = (await communicator.input("Enter due date or include it in a full sentence (e.g., 'Walk dog next week'): ")).strip()
             extraction = genai_client.extract_task_data(user_input)
             if not title and extraction.get("name"):
                 title = extraction.get("name")
@@ -42,9 +45,12 @@ class AddTaskUserRequest(UserRequest):
             logger.info("Invalid date format. Please use YYYY-MM-DD. Task not added.")
             return None
 
-        return AddTaskUserRequest(user_id, title, due_date)
+        return AddTaskUserRequest(user_id, title, due_date, communicator)
 
-    async def handle(self, task_service: TaskHttpService, vector_adder: AddableVectorStore):
+    async def handle(self, task_service: TaskHttpService, vector_adder: AddableVectorStore, communicator: Communicator):
+
+        self.communicator = communicator
+
         try:
             task = await task_service.create_task({
                 "title": self.title,
@@ -58,7 +64,7 @@ class AddTaskUserRequest(UserRequest):
                 user_id=self.user_id
             )
 
-            logger.info(f"Task '{self.title}' added with due date {self.due_date}!")
+            await communicator.output(f"Task '{self.title}' added with due date {self.due_date}!")
 
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 400:
