@@ -3,7 +3,7 @@ import time
 
 class SocketIOClient:
     def __init__(self, server_url: str):
-        self.sio = socketio.Client(logger=True, engineio_logger=True)
+        self.sio = socketio.Client()
         self.server_url = server_url
 
         self.sio.on('connect', self.on_connect)
@@ -17,7 +17,7 @@ class SocketIOClient:
         print("Disconnected from server.")
 
     def on_chat_message(self, data):
-        print(f"Server: {data}")
+        print(data)
 
     def start(self):
         max_retries = 3
@@ -35,7 +35,7 @@ class SocketIOClient:
         print("Type your message below. Type 'exit' to quit.")       
         try:
             while True:
-                    msg = input("You: ")
+                    msg = input()
                     if msg.lower() == "exit":
                         break
                     self.sio.emit("chat_message", msg)

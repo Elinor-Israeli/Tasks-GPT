@@ -36,6 +36,26 @@ services:
     volumes:
       - ./qdrant_data:/qdrant/storage
 
+  app:
+    build:
+      context: ./backend/app   
+      dockerfile: Dockerfile
+    container_name: app
+    restart: always
+    ports:
+      - "8080:8080"  
+    depends_on:
+      - api
+      - qdrant
+    env_file:
+      - backend/app/src/.env
+    environment:
+      - PYTHONPATH=/app
+      - QDRANT_HOST=qdrant
+      - API_BASE_URL=http://api:8000
+    volumes:
+      - ./backend/app:/app
+    
 volumes:
   postgres_data:
   qdrant_data:

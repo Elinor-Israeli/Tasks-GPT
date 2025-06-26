@@ -8,6 +8,7 @@ from src.http_services.task_http_service import TaskHttpService
 from src.utils.logger import logger
 from src.vector_store.interfaces import AddableVectorStore
 from .user_request import UserRequest
+
 class AddTaskUserRequest(UserRequest):
     def __init__(self, user_id: int, title: str, due_date: str, communicator:Communicator):
         super().__init__(user_id)

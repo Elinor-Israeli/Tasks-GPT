@@ -1,7 +1,9 @@
 import httpx
+import os
 
 class HttpClient:
-    def __init__(self, base_url: str= "http://localhost:8000"):
+    def __init__(self, base_url: str = None):
+        base_url = base_url or os.getenv("API_BASE_URL" , "http://localhost:8000")
         self.client = httpx.AsyncClient(base_url=base_url, timeout=10.0)
 
     async def get(self, url: str, params: dict = None, **kwargs):
