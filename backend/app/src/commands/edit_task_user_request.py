@@ -1,3 +1,4 @@
+import random
 from datetime import datetime
 from typing import Dict, Optional
 
@@ -8,7 +9,6 @@ from src.http_services.task_http_service import TaskHttpService
 from src.vector_store.interfaces import SearchableVectorStore
 from src.vector_store.task_vector_store import TaskVectorStore
 from src.utils.logger import logger
-
 
 class EditTaskUserRequest(UserRequest):
     def __init__(self, user_id: int, task_id: int,extracted_data: Dict[str, Optional[str]], communicator: Communicator):
@@ -34,12 +34,12 @@ class EditTaskUserRequest(UserRequest):
         logger.debug(f"AI extracted task_id={task_id}, task_title={task_title}")
 
         if not task_title and not task_id:
-            task_title = (await communicator.input("What task would you like to edit?\n")).strip()
+            task_title = (await communicator.input(" ")).strip()
 
         if not task_id and task_title:
             results = vector_searcher.search(query=task_title, user_id=user_id, top_k=3)
             if results:
-                await communicator.output("\nDid you mean one of these tasks?")
+                await communicator.output("\nDid you mean one of these?")
                 for i, res in enumerate(results, start=1):
                     payload = res.payload
                     await communicator.output(f"{i}. {payload['title']} (task_id={payload['task_id']})")
@@ -48,21 +48,19 @@ class EditTaskUserRequest(UserRequest):
                 if choice.isdigit() and 1 <= int(choice) <= len(results):
                     task_id = results[int(choice) - 1].payload["task_id"]
                 else:
-                    await communicator.output("Canceled or invalid choice.")
+                    await communicator.output("Got it — canceling the edit for now.")
                     return None
 
         if not task_id:
-            task_id = await (communicator.input("Enter task ID to edit: ")).strip()
+            task_id = await (communicator.input("Could you share the task ID you'd like to edit? ")).strip()
 
         task = await task_service.get_task_by_id(task_id)
         if not task:
-            logger.info("Task not found.")
+            logger.info("Hmm... I couldn’t find a task with that ID. Want to try again?")
             return None
 
-        await communicator.output(f"\nEditing Task {task['id']} - {task['title']}")
-
-        task_title = task.get('title', 'this task')
-        user_input = (await communicator.input(f"Great! You want to edit '{task_title}'. Enter your changes: ")).strip()
+        await communicator.output(f"\nCool, we're editing: '{task['title']}' (ID: {task['id']})")        
+        user_input = (await communicator.input(f"What would you like to change about '{task['title']}'?\n")).strip()
 
         try:
             extracted = genai_client.extract_edit_task_data(user_input)
@@ -72,9 +70,9 @@ class EditTaskUserRequest(UserRequest):
             extracted = {"title": None, "due_date": None} 
 
         if not extracted.get("title") and not extracted.get("due_date"):
-            await communicator.output("Sorry, I couldn't understand your changes.")
-            title = (await communicator.input("Enter the new title (or press Enter to skip): ")).strip()
-            due_date = (await communicator.input("Enter new due date (YYYY-MM-DD) or press Enter to skip: ")).strip()
+            await communicator.output("I didn’t quite catch that. Let’s try again manually:")
+            title = (await communicator.input("New title? (or leave blank): ")).strip()
+            due_date = (await communicator.input("New due date? (YYYY-MM-DD or leave blank): ")).strip()
             extracted = {
                 "title": title if title else None,
                 "due_date": due_date if due_date else None
@@ -84,29 +82,42 @@ class EditTaskUserRequest(UserRequest):
 
 
     async def handle(self, task_service: TaskHttpService, vector_store: TaskVectorStore, communicator: Communicator):
-        
         data = {}
+        payload_update = {}
+
         title = self.extracted_data.get("title")
         if title:
             data["title"] = title
-            vector_store.add(
-            task_id=int(self.task_id),
-            title=title,
-            user_id=self.user_id
-            )
+            payload_update["title"] = title
+            await communicator.output(f"Okay, updating the title to: '{title}' ✏️")
 
         due_date = self.extracted_data.get("due_date")
         if due_date:
             try:
                 datetime.strptime(due_date, "%Y-%m-%d")
                 data["due_date"] = due_date
+                payload_update["due_date"] = due_date
+                await communicator.output(f"Setting the new due date to: {due_date} 📆")
             except ValueError:
-                await self.communicator.output("Invalid date format. Please use YYYY-MM-DD.")
+                await communicator.output("Oops! That date format looks off. Use YYYY-MM-DD format please 🙏")
                 return
 
         if not data:
-            await self.communicator.output("No valid update data found.")
+            await communicator.output("Hmm, I didn’t get any changes to apply. Want to try again?")
             return
 
         await task_service.update_task(int(self.task_id), data)
-        await self.communicator.output("Task updated!")
+        vector_store.add(
+            task_id=int(self.task_id),
+            title=payload_update.get("title") or title,
+            user_id=self.user_id,
+            due_date=payload_update.get("due_date")
+        )
+
+        confirmations = [
+            "All done! ✨ Your task is updated.",
+            "✅ Changes saved! You're all set.",
+            "Task updated successfully! Want to do anything else?",
+            f"Great — I've updated '{title or 'your task'}'. Let me know what’s next!"
+        ]
+        await communicator.output(random.choice(confirmations))

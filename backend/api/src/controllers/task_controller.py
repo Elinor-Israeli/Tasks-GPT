@@ -25,7 +25,7 @@ def get_task_by_id_route(task_id: int, db: Session = Depends(get_db)):
     return task
 
 @router.post("/", response_model=TaskResponse)
-def add_task(task: TaskCreate, db: Session = Depends(get_db)):
+def add_task(task: TaskCreate, db: Session = Depends(get_db)) -> TaskResponse:
     return create_task(db, task)
 
 @router.delete("/{task_id}")
@@ -37,7 +37,7 @@ def delete_task_route(
     return {"message": "Task deleted successfully."}
 
 @router.put("/{task_id}", response_model=TaskResponse)
-def update_task_route(task_id: int, task_data: TaskUpdate, db: Session = Depends(get_db)):
+def update_task_route(task_id: int, task_data: TaskUpdate, db: Session = Depends(get_db)) -> TaskResponse:
     print(f"Received update for task {task_id}: {task_data}")
     return updated_task(
         session=db,

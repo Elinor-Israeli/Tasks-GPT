@@ -4,29 +4,37 @@ from .text_embedder import TextEmbedder
 from .interfaces import AddableVectorStore, SearchableVectorStore, RemovableVectorStore 
 from uuid import uuid4
 from src.utils.logger import logger
-
+from typing import Optional
 class TaskVectorStore(AddableVectorStore, SearchableVectorStore, RemovableVectorStore):
     def __init__(self, client: QdrantClient, embedder: TextEmbedder, collection_name: str ="tasks"):
         self.client = client
         self.embedder = embedder
         self.collection_name = collection_name
 
-    def add(self, task_id: int, title: str, user_id: int):
+    def add(self, task_id: int, title: str, user_id: int, due_date: Optional[str]=None):
         vector = self.embedder.embed(title)
         logger.debug(f"Storing vector for task_id={task_id}, title='{title}', user_id={user_id}")
+        
+        payload = {
+        "task_id": task_id,
+        "title": title,
+        "user": user_id
+        }
+
+        if due_date: 
+            payload["due_date"] = due_date
 
         point = PointStruct(
-            id = uuid4().int >> 64, #generate 64-bit int ID
+            id = task_id, 
             vector=vector,
-            payload={
-                "task_id": task_id,
-                "title": title, 
-                "user": user_id
-            } 
+            payload=payload
         )
 
-        self.client.upsert(collection_name=self.collection_name, points=[point])
-        logger.info(f"Vector for task '{title}' added to Qdrant.")
+        self.client.upsert(
+            collection_name=self.collection_name, 
+            points=[point]
+        )
+        logger.info(f"Vector upserted for task_id={task_id}, user_id={user_id}, title='{title}', due_date={due_date}")
 
 
     def search(self, query: str, user_id: int, top_k: int = 5):
@@ -65,8 +73,6 @@ class TaskVectorStore(AddableVectorStore, SearchableVectorStore, RemovableVector
 
         logger.debug(f"Task removal issued for task_id={task_id}, user_id={user_id}")
 
-
-           
 
         
 

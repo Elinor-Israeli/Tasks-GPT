@@ -8,6 +8,8 @@ from src.http_services.task_http_service import TaskHttpService
 from src.http_services.user_http_service import UserHttpService
 from src.vector_store.interfaces import SearchableVectorStore
 from src.utils.menus import MenuChoice
+from src.utils.logger import logger  
+
 class UserRequestFactory:
     def __init__(
         self, 
@@ -26,42 +28,44 @@ class UserRequestFactory:
     async def create_request(self, choice: MenuChoice, user_input, communicator):
         if choice == MenuChoice.VIEW_TASKS:
             return await ViewTasksUserRequest.create(
-                self.user_id,
-                self.genai_client,
-                user_input,
-                communicator
+                user_id=self.user_id,
+                genai_client=self.genai_client,
+                user_input=user_input,
+                vector_searcher=self.vector_store,
+                communicator=communicator
             )
         elif choice == MenuChoice.ADD_TASK:
+            logger.info("Add task is called")
             return await AddTaskUserRequest.create(
-                self.user_id,
-                self.genai_client,
-                user_input,
+                user_id=self.user_id,
+                genai_client=self.genai_client,
+                user_input=user_input,
                 communicator=communicator          
             )
         elif choice == MenuChoice.MARK_DONE:
             return await MarkDoneUserRequest.create(
-                self.user_id,
-                self.genai_client,
-                user_input,
+                user_id=self.user_id,
+                genai_client=self.genai_client,
+                user_input=user_input,
                 vector_searcher=self.vector_store,
                 communicator=communicator
 
             )
         elif choice == MenuChoice.DELETE_TASK:
             return await DeleteTaskUserRequest.create(
-                self.user_id,
-                self.genai_client,
-                user_input,
+                user_id=self.user_id,
+                genai_client=self.genai_client,
+                user_input=user_input,
                 vector_searcher=self.vector_store,
                 communicator=communicator
 
             )
         elif choice == MenuChoice.EDIT_TASK:
             return await EditTaskUserRequest.create(
-                self.user_id,
-                self.task_service,
-                self.genai_client,
-                user_input,
+                user_id=self.user_id,
+                task_service=self.task_service,
+                genai_client=self.genai_client,
+                user_input=user_input,
                 vector_searcher=self.vector_store,
                 communicator=communicator
             )

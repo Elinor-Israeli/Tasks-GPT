@@ -18,6 +18,7 @@ class AddTaskUserRequest(UserRequest):
 
     @classmethod
     async def create(cls, user_id: int, genai_client: AICommandInterpreter, user_input: str, communicator: Communicator):
+        logger.info(f"Extract task data with user_input: {user_input}")
         extraction = genai_client.extract_task_data(user_input)
         title = extraction.get("name")
         due_date = extraction.get("date")

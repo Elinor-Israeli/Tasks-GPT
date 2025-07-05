@@ -15,3 +15,10 @@ view_options = """
     4. Upcoming Tasks
     5. All Tasks
     """    
+
+class ViewOption(str, Enum):
+    COMPLETED_TASKS = '1'
+    INCOMPLETE_TASKS = '2'
+    OVERDUE_TASKS = '3'
+    UPCOMING_TASKS ='4'
+    ALL_TASKS = '5'
