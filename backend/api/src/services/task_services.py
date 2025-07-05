@@ -47,6 +47,13 @@ def get_tasks(session: Session, user_id: int, done: Optional[bool] = None, overd
 def get_task_by_id(db: Session, task_id: int) -> Optional[Task]:
     print(f"get_task_by_id querying for task_id: {task_id}")
     task: Optional[Task] = db.query(Task).filter(Task.id == task_id).first() 
+
+     if not task:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Task not found or access denied."
+        )
+
     print(f"Query result: {task}")
     return task
 
