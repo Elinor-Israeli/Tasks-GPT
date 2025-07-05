@@ -1,0 +1,3 @@
+# requirements.txt
+-r backend/api/requirements.txt
+-r backend/app/requirements.txt
