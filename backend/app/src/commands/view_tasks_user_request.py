@@ -1,3 +1,10 @@
+"""
+View tasks user request module for handling task viewing commands.
+
+This module contains the ViewTasksUserRequest class which handles
+displaying tasks to users with various filtering options.
+"""
+
 from typing import Optional, Dict, Any, List
 from src.commands.user_request import UserRequest
 from src.communicator import Communicator
@@ -8,6 +15,17 @@ from src.vector_store.interfaces import SearchableVectorStore
 from src.utils.menus import view_options, ViewOption
 
 class ViewTasksUserRequest(UserRequest):
+    """
+    User request handler for viewing tasks.
+    
+    This class handles displaying tasks to users with various
+    filtering options including completion status and due dates.
+    
+    Attributes:
+        choice: User's view choice (1-5 for different filter options)
+        communicator: Communication interface for user interaction
+    """
+    
     def __init__(self, user_id: int, choice: str, communicator: Communicator) -> None:
         super().__init__(user_id)
         self.choice: str = choice
@@ -15,6 +33,22 @@ class ViewTasksUserRequest(UserRequest):
     
     @classmethod
     async def create(cls, user_id: int, genai_client: AICommandInterpreter, user_input: str, vector_searcher: SearchableVectorStore, communicator: Communicator) -> Optional['ViewTasksUserRequest']:
+        """
+        Create a ViewTasksUserRequest instance from user input.
+        
+        This method uses AI to interpret the user's view request and
+        prompts for clarification if needed.
+        
+        Args:
+            user_id: The ID of the user viewing tasks
+            genai_client: AI client for interpreting view commands
+            user_input: Natural language input describing what to view
+            vector_searcher: Vector store for semantic search
+            communicator: Communication interface for user interaction
+            
+        Returns:
+            ViewTasksUserRequest instance if successful, None if cancelled
+        """
         result: Dict[str, Any] = genai_client.interpret_view_task_command(user_input, view_options)
         if result["status"] == "error":
             await communicator.output(result["message"])
@@ -34,6 +68,16 @@ class ViewTasksUserRequest(UserRequest):
         return ViewTasksUserRequest(user_id, follow_up_result["choice"], communicator)
 
     async def handle(self, task_service: TaskHttpService, *args) -> None:
+        """
+        Execute the view tasks request.
+        
+        This method retrieves tasks based on the user's choice and
+        displays them in a formatted list.
+        
+        Args:
+            task_service: Service for task-related operations
+            *args: Additional arguments (unused)
+        """
         comm: Communicator = self.communicator
 
         filter_kwargs: Dict[str, Any] = {

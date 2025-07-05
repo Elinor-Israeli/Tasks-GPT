@@ -1,3 +1,10 @@
+"""
+FastAPI application entry point for the TaskGPT API.
+
+This module sets up the FastAPI application with all necessary routers
+and initializes the database connection.
+"""
+
 from fastapi import FastAPI
 from controllers import task_controller, user_controller
 from utils.database import init_db

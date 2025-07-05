@@ -1,3 +1,10 @@
+"""
+Edit task user request module for handling task editing commands.
+
+This module contains the EditTaskUserRequest class which handles
+editing tasks with AI-powered data extraction and validation.
+"""
+
 import random
 from datetime import datetime
 from typing import Dict, Optional, Any
@@ -11,6 +18,18 @@ from src.vector_store.task_vector_store import TaskVectorStore
 from src.utils.logger import logger
 
 class EditTaskUserRequest(UserRequest):
+    """
+    User request handler for editing tasks.
+    
+    This class handles editing tasks with AI-powered extraction
+    of task information and validation of changes.
+    
+    Attributes:
+        task_id: ID of the task to edit
+        extracted_data: Dictionary containing extracted edit data
+        communicator: Communication interface for user interaction
+    """
+    
     def __init__(self, user_id: int, task_id: int, extracted_data: Dict[str, Optional[str]], communicator: Communicator) -> None:
         super().__init__(user_id)
         self.task_id: int = task_id
@@ -27,6 +46,23 @@ class EditTaskUserRequest(UserRequest):
         vector_searcher: SearchableVectorStore, 
         communicator: Communicator
     ) -> Optional['EditTaskUserRequest']:
+        """
+        Create an EditTaskUserRequest instance from user input.
+        
+        This method uses AI to extract task and edit information from natural language
+        and prompts for clarification if needed.
+        
+        Args:
+            user_id: The ID of the user editing the task
+            task_service: Service for task-related operations
+            genai_client: AI client for extracting task data
+            user_input: Natural language input describing the task to edit
+            vector_searcher: Vector store for semantic search
+            communicator: Communication interface for user interaction
+            
+        Returns:
+            EditTaskUserRequest instance if successful, None if cancelled
+        """
         data: Dict[str, Any] = genai_client.extract_task_id_or_title_to_edit(user_input)
         task_id: Optional[int] = data.get("task_id")
         task_title: Optional[str] = data.get("task_title")
@@ -82,6 +118,17 @@ class EditTaskUserRequest(UserRequest):
 
 
     async def handle(self, task_service: TaskHttpService, vector_store: TaskVectorStore, communicator: Communicator) -> None:
+        """
+        Execute the edit task request.
+        
+        This method updates the task in the database and refreshes
+        its embedding in the vector store.
+        
+        Args:
+            task_service: Service for task-related operations
+            vector_store: Vector store for updating task embeddings
+            communicator: Communication interface for user interaction
+        """
         data: Dict[str, Any] = {}
         payload_update: Dict[str, Optional[str]] = {}
 

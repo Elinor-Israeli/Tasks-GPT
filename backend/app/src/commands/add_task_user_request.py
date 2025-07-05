@@ -1,3 +1,10 @@
+"""
+Add task user request module for handling task creation commands.
+
+This module contains the AddTaskUserRequest class which handles the
+creation of new tasks with AI-powered data extraction.
+"""
+
 from datetime import datetime
 from typing import Optional, Dict, Any
 
@@ -11,6 +18,18 @@ from src.vector_store.interfaces import AddableVectorStore
 from .user_request import UserRequest
 
 class AddTaskUserRequest(UserRequest):
+    """
+    User request handler for adding new tasks.
+    
+    This class handles the creation of new tasks with AI-powered
+    extraction of task title and due date from natural language input.
+    
+    Attributes:
+        title: The title of the task to create
+        due_date: The due date for the task (YYYY-MM-DD format)
+        communicator: Communication interface for user interaction
+    """
+    
     def __init__(self, user_id: int, title: str, due_date: str, communicator: Communicator) -> None:
         super().__init__(user_id)
         self.title: str = title  
@@ -19,6 +38,21 @@ class AddTaskUserRequest(UserRequest):
 
     @classmethod
     async def create(cls, user_id: int, genai_client: AICommandInterpreter, user_input: str, communicator: Communicator) -> Optional['AddTaskUserRequest']:
+        """
+        Create an AddTaskUserRequest instance from user input.
+        
+        This method uses AI to extract task information from natural language
+        and prompts the user for missing information if needed.
+        
+        Args:
+            user_id: The ID of the user creating the task
+            genai_client: AI client for extracting task data
+            user_input: Natural language input describing the task
+            communicator: Communication interface for user interaction
+            
+        Returns:
+            AddTaskUserRequest instance if successful, None if cancelled
+        """
         logger.info(f"Extract task data with user_input: {user_input}")
         extraction: Dict[str, Any] = genai_client.extract_task_data(user_input)
         title: Optional[str] = extraction.get("name")
@@ -51,7 +85,17 @@ class AddTaskUserRequest(UserRequest):
         return AddTaskUserRequest(user_id, title, due_date, communicator)
 
     async def handle(self, task_service: TaskHttpService, vector_adder: AddableVectorStore, communicator: Communicator) -> None:
-
+        """
+        Execute the add task request.
+        
+        This method creates the task in the database and adds it to
+        the vector store for semantic search capabilities.
+        
+        Args:
+            task_service: Service for task-related operations
+            vector_adder: Vector store for adding task embeddings
+            communicator: Communication interface for user interaction
+        """
         self.communicator = communicator
 
         try:

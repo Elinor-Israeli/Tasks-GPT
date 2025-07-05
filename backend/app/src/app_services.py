@@ -1,3 +1,10 @@
+"""
+Application service module for coordinating the main application logic.
+
+This module contains the AppService class which orchestrates all application
+components including HTTP services, AI integration, and vector storage.
+"""
+
 import os
 from typing import Optional, Tuple
 
@@ -16,7 +23,32 @@ from src.commands.user_request import UserRequest
 
 
 class AppService:
+    """
+    Main application service that coordinates all components.
+    
+    This class manages the interaction between HTTP services, AI processing,
+    vector storage, and user communication. It handles the main application
+    loop and user authentication flow.
+    
+    Attributes:
+        http_client: HTTP client for API communication
+        user_service: Service for user-related operations
+        task_service: Service for task-related operations
+        genai_client: AI command interpreter
+        qdrant_client: Vector database client
+        embedder: Text embedding service
+        vector_store: Task vector storage service
+    """
+    
     def __init__(self, api_base_url: str, qdrant_host: str, genai_key: str) -> None:
+        """
+        Initialize the application service with all required components.
+        
+        Args:
+            api_base_url: Base URL for the API server
+            qdrant_host: Host address for Qdrant vector database
+            genai_key: API key for Gemini AI service
+        """
         self.http_client: HttpClient = HttpClient(base_url=api_base_url)
         self.user_service: UserHttpService = UserHttpService(self.http_client)
         self.task_service: TaskHttpService = TaskHttpService(self.http_client)
@@ -28,6 +60,15 @@ class AppService:
         self.vector_store: TaskVectorStore = TaskVectorStore(client=self.qdrant_client, embedder=self.embedder)
 
     async def handle(self, communicator: Optional[Communicator] = None) -> None:
+        """
+        Main application handler that manages the user interaction loop.
+        
+        This method handles user authentication, menu generation, command
+        interpretation, and request processing in a continuous loop.
+        
+        Args:
+            communicator: Communication interface for user interaction
+        """
         logger.debug("Using global app_services")
 
         user_id: int
@@ -80,6 +121,18 @@ class AppService:
                 await communicator.output("⚠️ Something went wrong. Please try again.")
 
     async def _login_or_signup(self, communicator: Communicator) -> Tuple[int, str]:
+        """
+        Handle user authentication flow (login or signup).
+        
+        This method prompts the user for credentials, attempts to find
+        an existing user, and creates a new account if needed.
+        
+        Args:
+            communicator: Communication interface for user interaction
+            
+        Returns:
+            Tuple of (user_id, username) for the authenticated user
+        """
         await communicator.output("\n--- Login or Signup ---")
         username: str = (await communicator.input("Enter your username: ")).strip()
         user: Optional[dict] = await self.user_service.get_user_by_username(username)

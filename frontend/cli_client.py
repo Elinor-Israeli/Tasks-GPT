@@ -1,8 +1,26 @@
+"""
+CLI client module for the TaskGPT application.
+
+This module provides a command-line client for connecting to the
+TaskGPT Socket.IO server and interacting with the application.
+"""
+
 import socketio
 import time
 from typing import Optional
 
 class SocketIOClient:
+    """
+    Socket.IO client for connecting to the TaskGPT server.
+    
+    This class provides a command-line interface for connecting to
+    the TaskGPT Socket.IO server and sending/receiving messages.
+    
+    Attributes:
+        sio: Socket.IO client instance
+        server_url: URL of the server to connect to
+    """
+    
     def __init__(self, server_url: str) -> None:
         self.sio: socketio.Client = socketio.Client()
         self.server_url: str = server_url
@@ -21,6 +39,12 @@ class SocketIOClient:
         print(data)
 
     def start(self) -> None:
+        """
+        Start the client and begin the interactive session.
+        
+        This method attempts to connect to the server with retry logic,
+        then enters an interactive loop for sending messages.
+        """
         max_retries: int = 3
         for attempt in range(max_retries):
             try:

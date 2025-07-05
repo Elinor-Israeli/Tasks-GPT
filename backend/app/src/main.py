@@ -1,3 +1,10 @@
+"""
+Main entry point for the TaskGPT application.
+
+This module initializes the application with command line argument parsing,
+environment configuration, and starts either the Socket.IO server or CLI interface.
+"""
+
 import os
 import argparse
 import asyncio

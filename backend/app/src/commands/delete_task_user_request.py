@@ -1,3 +1,10 @@
+"""
+Delete task user request module for handling task deletion commands.
+
+This module contains the DeleteTaskUserRequest class which handles
+the deletion of tasks with AI-powered task identification.
+"""
+
 from typing import Optional, Dict, Any, List
 from src.commands.user_request import UserRequest
 from src.communicator import Communicator
@@ -7,6 +14,18 @@ from src.vector_store.interfaces import SearchableVectorStore, RemovableVectorSt
 from src.utils.logger import logger
 
 class DeleteTaskUserRequest(UserRequest):
+    """
+    User request handler for deleting tasks.
+    
+    This class handles the deletion of tasks with AI-powered
+    identification of tasks by title or ID.
+    
+    Attributes:
+        task_id: ID of the task to delete (if known)
+        task_title: Title of the task to delete (if known)
+        communicator: Communication interface for user interaction
+    """
+    
     def __init__(self, user_id: int, task_id: Optional[int], task_title: Optional[str], communicator: Communicator) -> None:
         super().__init__(user_id)
         self.task_id: Optional[int] = task_id
@@ -15,6 +34,22 @@ class DeleteTaskUserRequest(UserRequest):
 
     @classmethod
     async def create(cls, user_id: int, genai_client: AICommandInterpreter, user_input: str, vector_searcher: SearchableVectorStore, communicator: Communicator) -> Optional['DeleteTaskUserRequest']:
+        """
+        Create a DeleteTaskUserRequest instance from user input.
+        
+        This method uses AI to extract task information from natural language
+        and provides task selection options if needed.
+        
+        Args:
+            user_id: The ID of the user deleting the task
+            genai_client: AI client for extracting task data
+            user_input: Natural language input describing the task to delete
+            vector_searcher: Vector store for semantic search
+            communicator: Communication interface for user interaction
+            
+        Returns:
+            DeleteTaskUserRequest instance if successful, None if cancelled
+        """
     
         data: Dict[str, Any] = genai_client.extract_task_id_or_title(user_input)
         task_id: Optional[int] = data.get("task_id")
@@ -45,6 +80,17 @@ class DeleteTaskUserRequest(UserRequest):
         return DeleteTaskUserRequest(user_id, task_id, task_title, communicator)
 
     async def handle(self, task_service: TaskHttpService, vector_remover: RemovableVectorStore, *args) -> None:
+        """
+        Execute the delete task request.
+        
+        This method deletes the task from the database and removes
+        its embedding from the vector store.
+        
+        Args:
+            task_service: Service for task-related operations
+            vector_remover: Vector store for removing task embeddings
+            *args: Additional arguments (unused)
+        """
         
         task: Optional[Dict[str, Any]] = None
 
