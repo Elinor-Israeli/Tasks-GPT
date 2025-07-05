@@ -1,26 +1,27 @@
 import socketio
 import time
+from typing import Optional
 
 class SocketIOClient:
-    def __init__(self, server_url: str):
-        self.sio = socketio.Client()
-        self.server_url = server_url
+    def __init__(self, server_url: str) -> None:
+        self.sio: socketio.Client = socketio.Client()
+        self.server_url: str = server_url
 
         self.sio.on('connect', self.on_connect)
         self.sio.on('disconnect', self.on_disconnect)
         self.sio.on('chat_message', self.on_chat_message)
 
-    def on_connect(self):
+    def on_connect(self) -> None:
         print("Connected to server.")
 
-    def on_disconnect(self):
+    def on_disconnect(self) -> None:
         print("Disconnected from server.")
 
-    def on_chat_message(self, data):
+    def on_chat_message(self, data: str) -> None:
         print(data)
 
-    def start(self):
-        max_retries = 3
+    def start(self) -> None:
+        max_retries: int = 3
         for attempt in range(max_retries):
             try:
                 print(f"Connecting to {self.server_url} (Attempt {attempt + 1})...")
@@ -35,7 +36,7 @@ class SocketIOClient:
         print("Type your message below. Type 'exit' to quit.")       
         try:
             while True:
-                    msg = input()
+                    msg: str = input()
                     if msg.lower() == "exit":
                         break
                     self.sio.emit("chat_message", msg)
@@ -45,5 +46,5 @@ class SocketIOClient:
                 self.sio.disconnect()
 
 if __name__ == "__main__":
-    client = SocketIOClient("http://localhost:8080")
+    client: SocketIOClient = SocketIOClient("http://localhost:8080")
     client.start()

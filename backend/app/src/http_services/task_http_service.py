@@ -1,12 +1,13 @@
+from typing import Optional, Dict, Any, List
 from .http_client import HttpClient
 
 
 class TaskHttpService:
-    def __init__(self, client: HttpClient):
-        self.client = client
+    def __init__(self, client: HttpClient) -> None:
+        self.client: HttpClient = client
 
-    async def get_tasks(self, user_id, done=None, overdue=False, upcoming=False):
-        params = {"user_id": user_id}
+    async def get_tasks(self, user_id: int, done: Optional[bool] = None, overdue: bool = False, upcoming: bool = False) -> List[Dict[str, Any]]:
+        params: Dict[str, Any] = {"user_id": user_id}
 
         if done is not None:
             params["done"] = done
@@ -21,25 +22,25 @@ class TaskHttpService:
         response.raise_for_status()
         return response.json()
 
-    async def get_task_by_id(self, task_id: int):
+    async def get_task_by_id(self, task_id: int) -> Dict[str, Any]:
         response = await self.client.get(f"/tasks/{task_id}")
         response.raise_for_status()
         return response.json()
 
-    async def create_task(self, task_data: dict):
+    async def create_task(self, task_data: Dict[str, Any]) -> Dict[str, Any]:
         response = await self.client.post("/tasks/", json=task_data)
         return response.json()
 
-    async def update_task(self, task_id: int, task_data: dict):
+    async def update_task(self, task_id: int, task_data: Dict[str, Any]) -> Dict[str, Any]:
         response = await self.client.put(f"/tasks/{task_id}", json=task_data)
         response.raise_for_status()
         return response.json()
 
-    async def delete_task(self, task_id: int):
+    async def delete_task(self, task_id: int) -> bool:
         response = await self.client.delete(f"/tasks/{task_id}")
         response.raise_for_status()
         return response.status_code == 204
     
-    async def close(self):
+    async def close(self) -> None:
         await self.client.aclose()
 

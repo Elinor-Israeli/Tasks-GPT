@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Final
 
 class MenuChoice(str, Enum):
     VIEW_TASKS = "1"
@@ -8,7 +9,7 @@ class MenuChoice(str, Enum):
     EDIT_TASK = "5"
     NONE = "None"
 
-view_options = """
+view_options: Final[str] = """
     1. Completed Tasks
     2. Incomplete Tasks
     3. Overdue Tasks

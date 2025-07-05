@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Optional, Dict, Any
 
 import httpx
 
@@ -10,18 +11,18 @@ from src.vector_store.interfaces import AddableVectorStore
 from .user_request import UserRequest
 
 class AddTaskUserRequest(UserRequest):
-    def __init__(self, user_id: int, title: str, due_date: str, communicator:Communicator):
+    def __init__(self, user_id: int, title: str, due_date: str, communicator: Communicator) -> None:
         super().__init__(user_id)
-        self.title = title  
-        self.due_date = due_date
-        self.communicator = communicator
+        self.title: str = title  
+        self.due_date: str = due_date
+        self.communicator: Communicator = communicator
 
     @classmethod
-    async def create(cls, user_id: int, genai_client: AICommandInterpreter, user_input: str, communicator: Communicator):
+    async def create(cls, user_id: int, genai_client: AICommandInterpreter, user_input: str, communicator: Communicator) -> Optional['AddTaskUserRequest']:
         logger.info(f"Extract task data with user_input: {user_input}")
-        extraction = genai_client.extract_task_data(user_input)
-        title = extraction.get("name")
-        due_date = extraction.get("date")
+        extraction: Dict[str, Any] = genai_client.extract_task_data(user_input)
+        title: Optional[str] = extraction.get("name")
+        due_date: Optional[str] = extraction.get("date")
 
         logger.debug(f"AI extracted: title={title}, date={due_date}")
 
@@ -41,7 +42,7 @@ class AddTaskUserRequest(UserRequest):
             logger.debug(f"Re-extracted: title={title}, date={due_date}")
 
         try:
-            parsed_date = datetime.strptime(due_date, "%Y-%m-%d")
+            parsed_date: datetime = datetime.strptime(due_date, "%Y-%m-%d")
             due_date = parsed_date.strftime("%Y-%m-%d")
         except ValueError:
             logger.info("Invalid date format. Please use YYYY-MM-DD. Task not added.")
@@ -49,12 +50,12 @@ class AddTaskUserRequest(UserRequest):
 
         return AddTaskUserRequest(user_id, title, due_date, communicator)
 
-    async def handle(self, task_service: TaskHttpService, vector_adder: AddableVectorStore, communicator: Communicator):
+    async def handle(self, task_service: TaskHttpService, vector_adder: AddableVectorStore, communicator: Communicator) -> None:
 
         self.communicator = communicator
 
         try:
-            task = await task_service.create_task({
+            task: Dict[str, Any] = await task_service.create_task({
                 "title": self.title,
                 "due_date": self.due_date,
                 "user_id": self.user_id
@@ -70,7 +71,7 @@ class AddTaskUserRequest(UserRequest):
 
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 400:
-                error_detail = e.response.json().get("detail", "Unknown error")
+                error_detail: str = e.response.json().get("detail", "Unknown error")
 
                 if "already exists" in error_detail.lower():
                     raise ValueError("A task with this title already exists.")

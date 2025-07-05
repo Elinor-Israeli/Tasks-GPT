@@ -1,3 +1,4 @@
+from typing import Optional
 from src.commands.add_task_user_request import AddTaskUserRequest
 from src.commands.delete_task_user_request import DeleteTaskUserRequest
 from src.commands.edit_task_user_request import EditTaskUserRequest
@@ -9,23 +10,25 @@ from src.http_services.user_http_service import UserHttpService
 from src.vector_store.interfaces import SearchableVectorStore
 from src.utils.menus import MenuChoice
 from src.utils.logger import logger  
+from src.communicator import Communicator
+from src.commands.user_request import UserRequest
 
 class UserRequestFactory:
     def __init__(
         self, 
         task_service: TaskHttpService, 
         user_service: UserHttpService, 
-        genai_client:AICommandInterpreter, 
+        genai_client: AICommandInterpreter, 
         user_id: int, 
-        vector_store:SearchableVectorStore,
-    ):
-        self.task_service = task_service
-        self.user_service = user_service
-        self.genai_client = genai_client
-        self.user_id = user_id
-        self.vector_store = vector_store
+        vector_store: SearchableVectorStore,
+    ) -> None:
+        self.task_service: TaskHttpService = task_service
+        self.user_service: UserHttpService = user_service
+        self.genai_client: AICommandInterpreter = genai_client
+        self.user_id: int = user_id
+        self.vector_store: SearchableVectorStore = vector_store
 
-    async def create_request(self, choice: MenuChoice, user_input, communicator):
+    async def create_request(self, choice: MenuChoice, user_input: str, communicator: Communicator) -> Optional[UserRequest]:
         if choice == MenuChoice.VIEW_TASKS:
             return await ViewTasksUserRequest.create(
                 user_id=self.user_id,

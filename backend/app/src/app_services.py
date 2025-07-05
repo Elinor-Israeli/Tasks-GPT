@@ -1,4 +1,5 @@
 import os
+from typing import Optional, Tuple
 
 from src.utils.logger import logger  
 from src.http_services.http_client import HttpClient
@@ -15,22 +16,24 @@ from src.commands.user_request import UserRequest
 
 
 class AppService:
-    def __init__(self, api_base_url: str, qdrant_host: str, genai_key: str):
-        self.http_client = HttpClient(base_url=api_base_url)
-        self.user_service = UserHttpService(self.http_client)
-        self.task_service = TaskHttpService(self.http_client)
+    def __init__(self, api_base_url: str, qdrant_host: str, genai_key: str) -> None:
+        self.http_client: HttpClient = HttpClient(base_url=api_base_url)
+        self.user_service: UserHttpService = UserHttpService(self.http_client)
+        self.task_service: TaskHttpService = TaskHttpService(self.http_client)
 
-        self.genai_client = AICommandInterpreter(api_key=genai_key)
+        self.genai_client: AICommandInterpreter = AICommandInterpreter(api_key=genai_key)
 
         self.qdrant_client = get_qdrant_client(host=qdrant_host)
-        self.embedder = TextEmbedder()
-        self.vector_store = TaskVectorStore(client=self.qdrant_client, embedder=self.embedder)
+        self.embedder: TextEmbedder = TextEmbedder()
+        self.vector_store: TaskVectorStore = TaskVectorStore(client=self.qdrant_client, embedder=self.embedder)
 
-    async def handle(self, communicator: Communicator = None):
+    async def handle(self, communicator: Optional[Communicator] = None) -> None:
         logger.debug("Using global app_services")
 
+        user_id: int
+        username: str
         user_id, username = await self._login_or_signup(communicator)
-        factory = UserRequestFactory(
+        factory: UserRequestFactory = UserRequestFactory(
             task_service=self.task_service,
             user_service=self.user_service,
             genai_client=self.genai_client,
@@ -40,31 +43,31 @@ class AppService:
 
         while True:
             try:
-                menu_prompt = self.genai_client.generate_conversational_menu(username=username)
+                menu_prompt: str = self.genai_client.generate_conversational_menu(username=username)
                 await communicator.output(menu_prompt)
 
-                options = """
+                options: str = """
                 1. View Tasks
                 2. Add Task
                 3. Mark Task as Done
                 4. Delete Task
                 5. Edit Task
                 """
-                user_input = (await communicator.input("")).strip()
+                user_input: str = (await communicator.input("")).strip()
 
                 logger.info(f"user_input: {user_input}")
 
-                choice = self.genai_client.interpret_command(user_input, options)
+                choice: MenuChoice = self.genai_client.interpret_command(user_input, options)
 
                 if choice == MenuChoice.NONE:
-                    await communicator.output("Hmm, I didn’t quite get that. Want to try saying it differently?")
+                    await communicator.output("Hmm, I didn't quite get that. Want to try saying it differently?")
                     continue
 
-                response = self.genai_client.generate_conversational_response(user_input, intent=choice, include_guide=True)
+                response: str = self.genai_client.generate_conversational_response(user_input, intent=choice, include_guide=True)
                 logger.info(f'app_services respond:{response}')
                 await communicator.output(response)
 
-                request: UserRequest = await factory.create_request(choice, user_input, communicator)
+                request: Optional[UserRequest] = await factory.create_request(choice, user_input, communicator)
 
                 if not request:
                     await communicator.output("Sorry, I couldn't figure that out. Maybe try a different phrase?")
@@ -76,16 +79,16 @@ class AppService:
                 logger.error(f"Unexpected error occurred: {e}")
                 await communicator.output("⚠️ Something went wrong. Please try again.")
 
-    async def _login_or_signup(self, communicator: Communicator):
+    async def _login_or_signup(self, communicator: Communicator) -> Tuple[int, str]:
         await communicator.output("\n--- Login or Signup ---")
-        username = (await communicator.input("Enter your username: ")).strip()
-        user = await self.user_service.get_user_by_username(username)
+        username: str = (await communicator.input("Enter your username: ")).strip()
+        user: Optional[dict] = await self.user_service.get_user_by_username(username)
 
         if user:
             await communicator.output(f"Welcome back to TaskGPT, {user['username']}! 🎉")
             return user['id'], user['username']
         else:
-            password = await communicator.input("You're new! Please create a password: ")
-            new_user = await self.user_service.create_user({"username": username, "password": password})
+            password: str = await communicator.input("You're new! Please create a password: ")
+            new_user: dict = await self.user_service.create_user({"username": username, "password": password})
             await communicator.output(f"Welcome to TaskGPT, {new_user['username']}! 🚀")
             return new_user['id'], new_user['username']

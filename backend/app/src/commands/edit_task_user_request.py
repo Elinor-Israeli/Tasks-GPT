@@ -1,6 +1,6 @@
 import random
 from datetime import datetime
-from typing import Dict, Optional
+from typing import Dict, Optional, Any
 
 from src.commands.user_request import UserRequest
 from src.communicator import Communicator
@@ -11,11 +11,11 @@ from src.vector_store.task_vector_store import TaskVectorStore
 from src.utils.logger import logger
 
 class EditTaskUserRequest(UserRequest):
-    def __init__(self, user_id: int, task_id: int,extracted_data: Dict[str, Optional[str]], communicator: Communicator):
+    def __init__(self, user_id: int, task_id: int, extracted_data: Dict[str, Optional[str]], communicator: Communicator) -> None:
         super().__init__(user_id)
-        self.task_id = task_id
-        self.extracted_data = extracted_data
-        self.communicator = communicator
+        self.task_id: int = task_id
+        self.extracted_data: Dict[str, Optional[str]] = extracted_data
+        self.communicator: Communicator = communicator
 
     @classmethod
     async def create(
@@ -24,12 +24,12 @@ class EditTaskUserRequest(UserRequest):
         task_service: TaskHttpService, 
         genai_client: AICommandInterpreter, 
         user_input: str, 
-        vector_searcher:SearchableVectorStore, 
+        vector_searcher: SearchableVectorStore, 
         communicator: Communicator
-    ):
-        data = genai_client.extract_task_id_or_title_to_edit(user_input)
-        task_id = data.get("task_id")
-        task_title = data.get("task_title")
+    ) -> Optional['EditTaskUserRequest']:
+        data: Dict[str, Any] = genai_client.extract_task_id_or_title_to_edit(user_input)
+        task_id: Optional[int] = data.get("task_id")
+        task_title: Optional[str] = data.get("task_title")
         
         logger.debug(f"AI extracted task_id={task_id}, task_title={task_title}")
 
@@ -56,7 +56,7 @@ class EditTaskUserRequest(UserRequest):
 
         task = await task_service.get_task_by_id(task_id)
         if not task:
-            logger.info("Hmm... I couldn’t find a task with that ID. Want to try again?")
+            logger.info("Hmm... I couldn't find a task with that ID. Want to try again?")
             return None
 
         await communicator.output(f"\nCool, we're editing: '{task['title']}' (ID: {task['id']})")        
@@ -70,7 +70,7 @@ class EditTaskUserRequest(UserRequest):
             extracted = {"title": None, "due_date": None} 
 
         if not extracted.get("title") and not extracted.get("due_date"):
-            await communicator.output("I didn’t quite catch that. Let’s try again manually:")
+            await communicator.output("I didn't quite catch that. Let's try again manually:")
             title = (await communicator.input("New title? (or leave blank): ")).strip()
             due_date = (await communicator.input("New due date? (YYYY-MM-DD or leave blank): ")).strip()
             extracted = {
@@ -81,17 +81,17 @@ class EditTaskUserRequest(UserRequest):
         return EditTaskUserRequest(user_id, task_id, extracted, communicator)
 
 
-    async def handle(self, task_service: TaskHttpService, vector_store: TaskVectorStore, communicator: Communicator):
-        data = {}
-        payload_update = {}
+    async def handle(self, task_service: TaskHttpService, vector_store: TaskVectorStore, communicator: Communicator) -> None:
+        data: Dict[str, Any] = {}
+        payload_update: Dict[str, Optional[str]] = {}
 
-        title = self.extracted_data.get("title")
+        title: Optional[str] = self.extracted_data.get("title")
         if title:
             data["title"] = title
             payload_update["title"] = title
             await communicator.output(f"Okay, updating the title to: '{title}' ✏️")
 
-        due_date = self.extracted_data.get("due_date")
+        due_date: Optional[str] = self.extracted_data.get("due_date")
         if due_date:
             try:
                 datetime.strptime(due_date, "%Y-%m-%d")
@@ -103,7 +103,7 @@ class EditTaskUserRequest(UserRequest):
                 return
 
         if not data:
-            await communicator.output("Hmm, I didn’t get any changes to apply. Want to try again?")
+            await communicator.output("Hmm, I didn't get any changes to apply. Want to try again?")
             return
 
         await task_service.update_task(int(self.task_id), data)
@@ -118,6 +118,6 @@ class EditTaskUserRequest(UserRequest):
             "All done! ✨ Your task is updated.",
             "✅ Changes saved! You're all set.",
             "Task updated successfully! Want to do anything else?",
-            f"Great — I've updated '{title or 'your task'}'. Let me know what’s next!"
+            f"Great — I've updated '{title or 'your task'}'. Let me know what's next!"
         ]
         await communicator.output(random.choice(confirmations))

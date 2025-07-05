@@ -4,34 +4,35 @@ from services.user_service import create_user, get_user, get_all_users, delete_u
 from schemas.user_schema import UserCreate, UserRead
 from utils.database import get_db
 from models import User
+from typing import List, Dict, Any, Optional
 
-router = APIRouter() 
+router: APIRouter = APIRouter() 
 
 @router.post("/", response_model=UserRead)
-def add_user(user_create: UserCreate, db: Session = Depends(get_db)):
+def add_user(user_create: UserCreate, db: Session = Depends(get_db)) -> UserRead:
     return create_user(db, user_create)
 
 @router.get("/{user_id}", response_model=UserRead)
-def read_user(user_id: int, db: Session = Depends(get_db)):
-    user = get_user(db, user_id)
+def read_user(user_id: int, db: Session = Depends(get_db)) -> UserRead:
+    user: Optional[User] = get_user(db, user_id)
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
     return user
 
-@router.get("/", response_model=list[UserRead])
-def read_users(db: Session = Depends(get_db)):
+@router.get("/", response_model=List[UserRead])
+def read_users(db: Session = Depends(get_db)) -> List[UserRead]:
     return get_all_users(db)
 
 @router.get("/by-username/{username}")
-def get_user_by_username(username: str, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.username == username).first()
+def get_user_by_username(username: str, db: Session = Depends(get_db)) -> User:
+    user: Optional[User] = db.query(User).filter(User.username == username).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
 
 @router.delete("/{user_id}", response_model=UserRead)
-def delete_existing_user(user_id: int, db: Session = Depends(get_db)):
-    user = delete_user(db, user_id)
+def delete_existing_user(user_id: int, db: Session = Depends(get_db)) -> UserRead:
+    user: Optional[User] = delete_user(db, user_id)
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
     return user
