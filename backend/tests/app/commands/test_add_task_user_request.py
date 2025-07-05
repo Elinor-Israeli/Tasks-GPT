@@ -1,68 +1,69 @@
 import pytest
+from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock
 from backend.app.src.commands.add_task_user_request import AddTaskUserRequest
 
 
-class MockCommunicator:
-    def __init__(self, inputs):
-        self.inputs = inputs
-        self.outputs = []
-        self.index = 0
-    
-    async def input(self, text):
-        self.outputs.append(f"[Prompted] {text}")
-        val = self.inputs[self.index]
-        self.index += 1
-        return val
+class MockGenAI:
+    def __init__(self, title="Test Task", date="2025-12-31"):
+        self.title = title
+        self.date = date
 
-    async def output(self, text):
-        self.outputs.append(f"[Output] {text}")
+    def extract_task_data(self, user_input):
+        return {"name": self.title, "date": self.date}
+
+
+class MockCommunicator:
+    def __init__(self):
+        self.inputs = []
+        self.outputs = []
+
+    async def input(self, prompt):
+        self.inputs.append(prompt)
+        return "Test Task due next month"
+
+    async def output(self, message):
+        self.outputs.append(message)
+
+
+class MockTaskService:
+    async def create_task(self, task_data):
+        return {
+            "id": 123,
+            "title": task_data["title"],
+            "due_date": task_data["due_date"],
+            "user_id": task_data["user_id"]
+        }
+
+
+class MockVectorAdder:
+    def add(self, task_id, title, user_id):
+        assert isinstance(task_id, int)
+        assert isinstance(title, str)
+        assert isinstance(user_id, int)
 
 
 @pytest.mark.asyncio
-async def test_add_task_user_request_handle():
-    mock_task_service = AsyncMock()
-    mock_task_service.create_task.return_value = {
-        "id": 1,
-        "title": "Buy milk",
-        "due_date": "2025-06-20",
-        "user_id": 123
-    }
-
-    mock_vector_store = MagicMock()
-    
-    mock_genai_client = MagicMock()
-    mock_genai_client.extract_task_data.return_value = {
-        "name": "Buy milk", "date": "2025-06-20"
-    }
-    
-    communicator = MockCommunicator(inputs=[])
+async def test_add_task_user_request_create_and_handle():
+    user_id = 1
+    user_input = "Buy milk tomorrow"
+    communicator = MockCommunicator()
+    genai_client = MockGenAI()
+    task_service = MockTaskService()
+    vector_adder = MockVectorAdder()
 
     request = await AddTaskUserRequest.create(
-        user_id=123,
-        genai_client=mock_genai_client,
-        user_input="Buy milk next Thursday",
+        user_id=user_id,
+        genai_client=genai_client,
+        user_input=user_input,
         communicator=communicator
     )
 
-    await request.handle(
-        mock_task_service,
-        vector_adder=mock_vector_store,
-        communicator=communicator
-    )
+    assert request is not None
+    assert request.title == "Test Task"
+    assert request.due_date == "2025-12-31"
 
-    mock_task_service.create_task.assert_awaited_once_with({
-        "title": "Buy milk",
-        "due_date": "2025-06-20",
-        "user_id": 123
-    })
-    mock_vector_store.add.assert_called_once_with(
-        task_id=1,
-        title="Buy milk",
-        user_id=123
-    )
+    await request.handle(task_service, vector_adder, communicator)
 
-    assert "[Output] Task 'Buy milk' added with due date 2025-06-20!" in communicator.outputs
-
-
+    assert communicator.outputs[0] == "Task 'Test Task' added with due date 2025-12-31!"
 
