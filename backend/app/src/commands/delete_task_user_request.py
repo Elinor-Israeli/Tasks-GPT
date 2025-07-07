@@ -10,7 +10,7 @@ from src.commands.user_request import UserRequest
 from src.communicator import Communicator
 from src.genai import AICommandInterpreter
 from src.http_services.task_http_service import TaskHttpService
-from src.vector_store.interfaces import SearchableVectorStore, RemovableVectorStore
+from src.vector_store.interfaces import SearchableVectorStore, EditableVectorStore
 from src.utils.logger import logger
 
 class DeleteTaskUserRequest(UserRequest):
@@ -23,14 +23,12 @@ class DeleteTaskUserRequest(UserRequest):
     Attributes:
         task_id: ID of the task to delete (if known)
         task_title: Title of the task to delete (if known)
-        communicator: Communication interface for user interaction
     """
     
-    def __init__(self, user_id: int, task_id: Optional[int], task_title: Optional[str], communicator: Communicator) -> None:
+    def __init__(self, user_id: int, task_id: Optional[int], task_title: Optional[str]) -> None:
         super().__init__(user_id)
         self.task_id: Optional[int] = task_id
         self.task_title: Optional[str] = task_title
-        self.communicator: Communicator = communicator
 
     @classmethod
     async def create(cls, user_id: int, genai_client: AICommandInterpreter, user_input: str, vector_searcher: SearchableVectorStore, communicator: Communicator) -> Optional['DeleteTaskUserRequest']:
@@ -77,9 +75,9 @@ class DeleteTaskUserRequest(UserRequest):
         if not (task_id or task_title):
             raise Exception("Failed to identify the task to delete after multiple attempts. Please try again later.")        
 
-        return DeleteTaskUserRequest(user_id, task_id, task_title, communicator)
+        return DeleteTaskUserRequest(user_id, task_id, task_title)
 
-    async def handle(self, task_service: TaskHttpService, vector_remover: RemovableVectorStore, *args) -> None:
+    async def handle(self, task_service: TaskHttpService, vector_editor: EditableVectorStore, communicator: Communicator) -> None:
         """
         Execute the delete task request.
         
@@ -88,7 +86,7 @@ class DeleteTaskUserRequest(UserRequest):
         
         Args:
             task_service: Service for task-related operations
-            vector_remover: Vector store for removing task embeddings
+            vector_editor: Vector store for removing task embeddings
             *args: Additional arguments (unused)
         """
         
@@ -110,9 +108,9 @@ class DeleteTaskUserRequest(UserRequest):
 
         if task:
             await task_service.delete_task(task["id"])
-            await self.communicator.output(f"Task '{task['title']}' deleted!")
+            await communicator.output(f"Task '{task['title']}' deleted!")
 
-            vector_remover.remove(task_id=task["id"], user_id=self.user_id)
+            vector_editor.remove(task_id=task["id"], user_id=self.user_id)
             logger.debug(f"Removed task {task['id']} from vector store.")
         else:
-            await self.communicator.output("Task not found.")
+            await communicator.output("Task not found.")

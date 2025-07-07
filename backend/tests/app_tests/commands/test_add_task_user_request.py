@@ -33,7 +33,7 @@ class MockTaskService:
         }
 
 
-class MockVectorAdder:
+class MockVectorEditor:
     def add(self, task_id, title, user_id):
         assert isinstance(task_id, int)
         assert isinstance(title, str)
@@ -47,20 +47,20 @@ async def test_add_task_user_request_create_and_handle():
     communicator = MockCommunicator()
     genai_client = MockGenAI()
     task_service = MockTaskService()
-    vector_adder = MockVectorAdder()
+    vector_editor = MockVectorEditor()
 
     request = await AddTaskUserRequest.create(
         user_id=user_id,
         genai_client=genai_client,
         user_input=user_input,
-        communicator=communicator
+        communicator=communicator,
     )
 
     assert request is not None
     assert request.title == "Test Task"
     assert request.due_date == "2025-12-31"
 
-    await request.handle(task_service, vector_adder, communicator)
+    await request.handle(task_service, vector_editor, communicator)
 
     assert communicator.outputs[0] == "Task 'Test Task' added with due date 2025-12-31!"
 

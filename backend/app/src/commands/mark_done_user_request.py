@@ -10,7 +10,7 @@ from src.commands.user_request import UserRequest
 from src.communicator import Communicator
 from src.genai import AICommandInterpreter
 from src.http_services.task_http_service import TaskHttpService
-from src.vector_store.interfaces import SearchableVectorStore
+from src.vector_store.interfaces import SearchableVectorStore, EditableVectorStore
 from src.utils.logger import logger
 
 class MarkDoneUserRequest(UserRequest):
@@ -25,10 +25,9 @@ class MarkDoneUserRequest(UserRequest):
         communicator: Communication interface for user interaction
     """
     
-    def __init__(self, user_id: int, task_id: Optional[int], communicator: Communicator) -> None:
+    def __init__(self, user_id: int, task_id: Optional[int]) -> None:
         super().__init__(user_id)
         self.task_id: Optional[int] = task_id 
-        self.communicator: Communicator = communicator
 
     @classmethod
     async def create(cls, user_id: int, genai_client: AICommandInterpreter, user_input: str, vector_searcher: SearchableVectorStore, communicator: Communicator) -> Optional['MarkDoneUserRequest']:
@@ -72,9 +71,9 @@ class MarkDoneUserRequest(UserRequest):
                     await communicator.output("Canceled or invalid choice.")
                     return None
 
-        return MarkDoneUserRequest(user_id, task_id, communicator)
+        return MarkDoneUserRequest(user_id, task_id)
     
-    async def handle(self, task_service: TaskHttpService, *args) -> None:
+    async def handle(self, task_service: TaskHttpService, vector_editor: EditableVectorStore, communicator: Communicator) -> None:
         """
         Execute the mark done request.
         
@@ -82,13 +81,14 @@ class MarkDoneUserRequest(UserRequest):
         
         Args:
             task_service: Service for task-related operations
-            *args: Additional arguments (unused)
+            vector_editor: Vector store for updating task embeddings
+            communicator: Communication interface for user interaction
         """
         logger.debug(f"Marking task by ID: {self.task_id}")
         task: Optional[Dict[str, Any]] = await task_service.get_task_by_id(self.task_id)
 
         if task:
             await task_service.update_task(task["id"], {"done": True})
-            await self.communicator.output(f"Task '{task['title']}' marked as done!")
+            await communicator.output(f"Task '{task['title']}' marked as done!")
         else:
             logger.error("Task not found.")

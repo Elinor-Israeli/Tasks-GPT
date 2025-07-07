@@ -40,12 +40,13 @@ async def test_delete_task_by_id():
         genai_client=mock_genai_client,
         user_input="delete task 42",
         vector_searcher=mock_vector_searcher,
-        communicator=communicator
+        communicator=communicator,
     )
 
     await request.handle(
         task_service=mock_task_service,
-        vector_remover=mock_vector_searcher,
+        vector_editor=mock_vector_searcher,
+        communicator=communicator
     )
 
     mock_task_service.delete_task.assert_awaited_once_with(42)

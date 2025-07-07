@@ -49,15 +49,15 @@ class AppService:
             qdrant_host: Host address for Qdrant vector database
             genai_key: API key for Gemini AI service
         """
-        self.http_client: HttpClient = HttpClient(base_url=api_base_url)
-        self.user_service: UserHttpService = UserHttpService(self.http_client)
-        self.task_service: TaskHttpService = TaskHttpService(self.http_client)
+        http_client: HttpClient = HttpClient(base_url=api_base_url)
+        self.user_service: UserHttpService = UserHttpService(http_client)
+        self.task_service: TaskHttpService = TaskHttpService(http_client)
 
         self.genai_client: AICommandInterpreter = AICommandInterpreter(api_key=genai_key)
 
-        self.qdrant_client = get_qdrant_client(host=qdrant_host)
-        self.embedder: TextEmbedder = TextEmbedder()
-        self.vector_store: TaskVectorStore = TaskVectorStore(client=self.qdrant_client, embedder=self.embedder)
+        qdrant_client = get_qdrant_client(host=qdrant_host)
+        embedder: TextEmbedder = TextEmbedder()
+        self.vector_store: TaskVectorStore = TaskVectorStore(client=qdrant_client, embedder=embedder)
 
     async def handle(self, communicator: Communicator = None) -> None:
         """

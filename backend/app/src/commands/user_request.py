@@ -5,9 +5,12 @@ This module defines the base UserRequest class that all specific
 user request types inherit from.
 """
 
-from typing import Protocol
+from src.http_services.task_http_service import TaskHttpService
+from src.vector_store.interfaces import EditableVectorStore
+from src.communicator import Communicator
+from abc import ABC, abstractmethod
 
-class UserRequest:
+class UserRequest(ABC):
     """
     Base class for all user request types.
     
@@ -20,3 +23,8 @@ class UserRequest:
     
     def __init__(self, user_id: int) -> None:
         self.user_id: int = user_id
+
+    
+    @abstractmethod
+    async def handle(self, task_service: TaskHttpService, vector_editor: EditableVectorStore, communicator: Communicator) -> None:
+        pass

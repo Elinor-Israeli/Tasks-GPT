@@ -13,8 +13,7 @@ from src.commands.user_request import UserRequest
 from src.communicator import Communicator
 from src.genai import AICommandInterpreter
 from src.http_services.task_http_service import TaskHttpService
-from src.vector_store.interfaces import SearchableVectorStore
-from src.vector_store.task_vector_store import TaskVectorStore
+from src.vector_store.interfaces import SearchableVectorStore, EditableVectorStore
 from src.utils.logger import logger
 
 class EditTaskUserRequest(UserRequest):
@@ -27,14 +26,12 @@ class EditTaskUserRequest(UserRequest):
     Attributes:
         task_id: ID of the task to edit
         extracted_data: Dictionary containing extracted edit data
-        communicator: Communication interface for user interaction
     """
     
-    def __init__(self, user_id: int, task_id: int, extracted_data: Dict[str, Optional[str]], communicator: Communicator) -> None:
+    def __init__(self, user_id: int, task_id: int, extracted_data: Dict[str, Optional[str]]) -> None:
         super().__init__(user_id)
         self.task_id: int = task_id
         self.extracted_data: Dict[str, Optional[str]] = extracted_data
-        self.communicator: Communicator = communicator
 
     @classmethod
     async def create(
@@ -114,10 +111,10 @@ class EditTaskUserRequest(UserRequest):
                 "due_date": due_date if due_date else None
             }     
 
-        return EditTaskUserRequest(user_id, task_id, extracted, communicator)
+        return EditTaskUserRequest(user_id, task_id, extracted)
 
 
-    async def handle(self, task_service: TaskHttpService, vector_store: TaskVectorStore, communicator: Communicator) -> None:
+    async def handle(self, task_service: TaskHttpService, vector_editor: EditableVectorStore, communicator: Communicator) -> None:
         """
         Execute the edit task request.
         
@@ -126,7 +123,7 @@ class EditTaskUserRequest(UserRequest):
         
         Args:
             task_service: Service for task-related operations
-            vector_store: Vector store for updating task embeddings
+            vector_editor: Vector store for updating task embeddings
             communicator: Communication interface for user interaction
         """
         data: Dict[str, Any] = {}
@@ -154,7 +151,7 @@ class EditTaskUserRequest(UserRequest):
             return
 
         await task_service.update_task(int(self.task_id), data)
-        vector_store.add(
+        vector_editor.add(
             task_id=int(self.task_id),
             title=payload_update.get("title") or title,
             user_id=self.user_id,

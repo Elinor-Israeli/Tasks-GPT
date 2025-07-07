@@ -14,7 +14,7 @@ from src.communicator import Communicator
 from src.genai import AICommandInterpreter
 from src.http_services.task_http_service import TaskHttpService
 from src.utils.logger import logger
-from src.vector_store.interfaces import AddableVectorStore
+from src.vector_store.interfaces import EditableVectorStore
 from .user_request import UserRequest
 
 class AddTaskUserRequest(UserRequest):
@@ -30,11 +30,10 @@ class AddTaskUserRequest(UserRequest):
         communicator: Communication interface for user interaction
     """
     
-    def __init__(self, user_id: int, title: str, due_date: str, communicator: Communicator) -> None:
+    def __init__(self, user_id: int, title: str, due_date: str) -> None:
         super().__init__(user_id)
         self.title: str = title  
         self.due_date: str = due_date
-        self.communicator: Communicator = communicator
 
     @classmethod
     async def create(cls, user_id: int, genai_client: AICommandInterpreter, user_input: str, communicator: Communicator) -> Optional['AddTaskUserRequest']:
@@ -82,9 +81,9 @@ class AddTaskUserRequest(UserRequest):
             logger.info("Invalid date format. Please use YYYY-MM-DD. Task not added.")
             return None
 
-        return AddTaskUserRequest(user_id, title, due_date, communicator)
+        return AddTaskUserRequest(user_id, title, due_date)
 
-    async def handle(self, task_service: TaskHttpService, vector_adder: AddableVectorStore, communicator: Communicator) -> None:
+    async def handle(self, task_service: TaskHttpService, vector_editor: EditableVectorStore, communicator: Communicator) -> None:
         """
         Execute the add task request.
         
@@ -93,10 +92,9 @@ class AddTaskUserRequest(UserRequest):
         
         Args:
             task_service: Service for task-related operations
-            vector_adder: Vector store for adding task embeddings
+            vector_editor: Vector store for adding task embeddings
             communicator: Communication interface for user interaction
         """
-        self.communicator = communicator
 
         try:
             task: Dict[str, Any] = await task_service.create_task({
@@ -105,7 +103,7 @@ class AddTaskUserRequest(UserRequest):
                 "user_id": self.user_id
             })
 
-            vector_adder.add(
+            vector_editor.add(
                 task_id=task["id"],
                 title=self.title,
                 user_id=self.user_id

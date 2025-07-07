@@ -27,12 +27,11 @@ async def test_edit_task_user_request_handle_updates_task_and_vector_store():
         user_id=1,
         task_id=101,
         extracted_data=extracted_data,
-        communicator=communicator
     )
 
     await request.handle(
         task_service=mock_task_service,
-        vector_store=mock_vector_store,
+        vector_editor=mock_vector_store,
         communicator=communicator
     )
 

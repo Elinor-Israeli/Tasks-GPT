@@ -21,6 +21,7 @@ class MockCommunicator:
 async def test_mark_done_by_id():
     mock_task_service = AsyncMock()
     mock_vector_searcher = MagicMock()
+    mock_vector_editor = MagicMock()
     mock_genai_client = MagicMock()
     communicator = MockCommunicator(inputs=[])
 
@@ -43,6 +44,6 @@ async def test_mark_done_by_id():
         communicator=communicator
     )
 
-    await request.handle(mock_task_service)
+    await request.handle(mock_task_service, mock_vector_editor, communicator)
 
     mock_task_service.update_task.assert_awaited_once_with(101, {"done": True})

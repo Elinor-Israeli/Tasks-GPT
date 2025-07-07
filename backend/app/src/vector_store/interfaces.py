@@ -8,26 +8,6 @@ including adding, searching, and removing task embeddings.
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any
 
-class AddableVectorStore(ABC):
-    """
-    Abstract base class for vector stores that support adding embeddings.
-    
-    This interface defines the contract for adding task embeddings
-    to a vector store for semantic search capabilities.
-    """
-    
-    @abstractmethod
-    def add(self, task_id: int, title: str, user_id: int) -> None:
-        """
-        Add a task embedding to the vector store.
-        
-        Args:
-            task_id: ID of the task
-            title: Title of the task for embedding
-            user_id: ID of the user who owns the task
-        """
-        pass
-
 class SearchableVectorStore(ABC):
     """
     Abstract base class for vector stores that support searching embeddings.
@@ -51,13 +31,25 @@ class SearchableVectorStore(ABC):
         """
         pass
 
-class RemovableVectorStore(ABC):
+class EditableVectorStore(ABC):
     """
-    Abstract base class for vector stores that support removing embeddings.
+    Abstract base class for vector stores that support adding and removing embeddings.
     
-    This interface defines the contract for removing task embeddings
-    from a vector store when tasks are deleted.
+    This interface defines the contract for adding task embeddings
+    to a vector store for semantic search capabilities and for removing them.
     """
+    
+    @abstractmethod
+    def add(self, task_id: int, title: str, user_id: int) -> None:
+        """
+        Add a task embedding to the vector store.
+        
+        Args:
+            task_id: ID of the task
+            title: Title of the task for embedding
+            user_id: ID of the user who owns the task
+        """
+        pass
     
     @abstractmethod
     def remove(self, task_id: int, user_id: int) -> None:

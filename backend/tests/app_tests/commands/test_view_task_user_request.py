@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 from app.src.commands.view_tasks_user_request import ViewTasksUserRequest
 
 class MockCommunicator:
@@ -17,6 +17,7 @@ async def test_view_tasks_user_request_handle_shows_completed_tasks():
     user_id = 1
     choice = "1"  
     communicator = MockCommunicator()
+    mock_vector_editor = MagicMock()
 
     mock_task_service = AsyncMock()
     mock_task_service.get_tasks.return_value = [
@@ -27,10 +28,9 @@ async def test_view_tasks_user_request_handle_shows_completed_tasks():
     request = ViewTasksUserRequest(
         user_id=user_id,
         choice=choice,
-        communicator=communicator
     )
 
-    await request.handle(mock_task_service)
+    await request.handle(mock_task_service, mock_vector_editor, communicator)
 
     mock_task_service.get_tasks.assert_awaited_once_with(user_id=user_id, done=True)
     assert "--- TASKS ---" in communicator.outputs[0]
