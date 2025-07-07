@@ -58,3 +58,4 @@ python main.py
 [comment]: <> (docker run --name my-postgres -e POSTGRES_USER=elinor -e POSTGRES_PASSWORD=elinor123 -e POSTGRES_DB=ToDoApp_DB -p 5432:5432 -d postgres)
 [comment]: <> (docker build -t fastapi .)
 [comment]: <> (docker run -d -p 8000:8000 fastapi)
+[comment]: <> ($env:PYTHONPATH="C:\Users\Elinor\Desktop\TaskGPT\backend\app" - for testing when import don't work)

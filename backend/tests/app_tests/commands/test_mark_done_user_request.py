@@ -35,7 +35,7 @@ async def test_mark_done_by_id():
         "done": False
     }
 
-    request = MarkDoneUserRequest.create(
+    request = await MarkDoneUserRequest.create(
         user_id=1,
         genai_client=mock_genai_client,
         user_input="mark task 101 as done",

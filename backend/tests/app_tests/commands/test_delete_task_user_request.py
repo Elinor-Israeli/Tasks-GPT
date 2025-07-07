@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock
-from backend.app.src.commands.delete_task_user_request import DeleteTaskUserRequest
+from app.src.commands.delete_task_user_request import DeleteTaskUserRequest
 
 class MockCommunicator:
     def __init__(self, inputs):

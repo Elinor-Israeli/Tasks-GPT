@@ -32,6 +32,7 @@ jobs:
     # Run tests with pytest
     - name: Run Pytest
       run: |
+        export PYTHONPATH=backend/app
         pytest --maxfail=1 --disable-warnings -q  
       env:
         GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}

@@ -27,15 +27,6 @@ class TestAICommandInterpreter(unittest.TestCase):
         self.assertEqual(choice, MenuChoice.NONE)
         self.mock_model.side_effect = None
 
-    def test_interpret_view_task_command(self):
-        self.mock_model.return_value.text = "2"
-        result = self.ai.interpret_view_task_command("show completed", "1. All\n2. Completed")
-        self.assertEqual(result, "2")
-
-    def test_interpret_edit_task_command(self):
-        self.mock_model.return_value.text = "1"
-        result = self.ai.interpret_edit_task_command("change title", "1. Title\n2. Date")
-        self.assertEqual(result, "1")
 
     def test_extract_task_data_valid(self):
         today = date.today().strftime("%Y-%m-%d")

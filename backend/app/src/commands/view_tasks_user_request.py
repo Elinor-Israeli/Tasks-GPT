@@ -27,6 +27,14 @@ class ViewTasksUserRequest(UserRequest):
     """
     
     def __init__(self, user_id: int, choice: str, communicator: Communicator) -> None:
+        """
+        Initialize a view tasks request.
+        
+        Args:
+            user_id: The ID of the user viewing tasks
+            choice: The user's view choice (1-5)
+            communicator: Communication interface for user interaction
+        """
         super().__init__(user_id)
         self.choice: str = choice
         self.communicator: Communicator = communicator
