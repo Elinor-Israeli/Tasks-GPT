@@ -104,7 +104,7 @@ class AppService:
                     await communicator.output("Hmm, I didn't quite get that. Want to try saying it differently?")
                     continue
 
-                response: str = self.genai_client.generate_conversational_response(user_input, intent=choice, include_guide=True)
+                response: str = self.genai_client.generate_conversational_response(user_input, intent=choice)
                 logger.info(f'app_services respond:{response}')
                 await communicator.output(response)
 

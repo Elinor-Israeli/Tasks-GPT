@@ -79,21 +79,7 @@ class AICommandInterpreter:
 
             logger.info(f"interpret_view_task_command raw: {result_raw}")
 
-
-            cleaned = re.sub(r"^```json\s*|```$", "", result_raw.strip(), flags=re.MULTILINE)
-            logger.info(f'json : {cleaned}')
-            try:
-                result = json.loads(cleaned)
-                return result 
-            except json.JSONDecodeError as e:
-                logger.error(f'JSON parsing failed: {e}')
-                logger.info(f'Cleaned AI output (before parsing): {repr:cleaned}')
-                return {
-                "status": "error",
-                "message": "The AI response could not be parsed as JSON.",
-                "choice": None
-            }
-
+            return self._safe_json_parse(result_raw, {"status": "error", "choice": None})
         except Exception as e:
             logger.error(f"Gemini AI failed to parse view task command: {e}")
             return {"status": "error", "message": "Something went wrong.", "choice": None}
@@ -127,7 +113,7 @@ class AICommandInterpreter:
         prompt = MENU_TEMPLATE.format(name_intro=f"{username}," if username else "there")
         return self._call_gemini(prompt) or "Hi! 😊 What would you like to do?"
 
-    def generate_conversational_response(self, user_input: str, intent: MenuChoice, include_guide: bool = False) -> str:
+    def generate_conversational_response(self, user_input: str, intent: MenuChoice) -> str:
         prompt = CONFIRMATION_TEMPLATE.format(user_input=user_input, intent=intent.name)
         logger.info(f'GC prompt- {prompt}')
         confirmation = self._call_gemini(prompt) or f"Okay! Let’s handle that '{intent.name.lower()}' request ✅"
