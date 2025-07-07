@@ -1,7 +1,7 @@
 import pytest
 from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock
-from backend.app.src.commands.add_task_user_request import AddTaskUserRequest
+from app.src.commands.add_task_user_request import AddTaskUserRequest
 
 
 class MockGenAI:

@@ -59,7 +59,7 @@ class AppService:
         self.embedder: TextEmbedder = TextEmbedder()
         self.vector_store: TaskVectorStore = TaskVectorStore(client=self.qdrant_client, embedder=self.embedder)
 
-    async def handle(self, communicator: Optional[Communicator] = None) -> None:
+    async def handle(self, communicator: Communicator = None) -> None:
         """
         Main application handler that manages the user interaction loop.
         

@@ -6,12 +6,33 @@ from uuid import uuid4
 from src.utils.logger import logger
 from typing import Optional
 class TaskVectorStore(AddableVectorStore, SearchableVectorStore, RemovableVectorStore):
+    """
+    A vector store for task data using Qdrant and text embedding.
+
+    This class allows storing, searching, and removing vectorized representations 
+    of tasks based on their title. It ensures that tasks are grouped per user 
+    using payload metadata.
+
+    Attributes:
+        client (QdrantClient): Qdrant client for vector database operations.
+        embedder (TextEmbedder): Embedding utility for task titles.
+        collection_name (str): The name of the Qdrant collection to use.
+    """
     def __init__(self, client: QdrantClient, embedder: TextEmbedder, collection_name: str ="tasks"):
         self.client = client
         self.embedder = embedder
         self.collection_name = collection_name
 
     def add(self, task_id: int, title: str, user_id: int, due_date: Optional[str]=None):
+        """
+        Adds a new task vector to the collection.
+
+        Args:
+            task_id (int): Unique ID of the task.
+            title (str): Title of the task to be embedded.
+            user_id (int): ID of the user who owns the task.
+            due_date (Optional[str]): Optional due date in string format.
+        """
         vector = self.embedder.embed(title)
         logger.debug(f"Storing vector for task_id={task_id}, title='{title}', user_id={user_id}")
         
@@ -38,6 +59,17 @@ class TaskVectorStore(AddableVectorStore, SearchableVectorStore, RemovableVector
 
 
     def search(self, query: str, user_id: int, top_k: int = 5):
+        """
+        Searches for the top-k most relevant tasks for a given query and user.
+
+        Args:
+            query (str): Text to search against stored task titles.
+            user_id (int): ID of the user to restrict the search to.
+            top_k (int): Maximum number of results to return.
+
+        Returns:
+            List[ScoredPoint]: Top matching task vectors.
+        """
         logger.debug(f"Embedding and searching for query='{query}' (user_id={user_id})")
         vector = self.embedder.embed(query)
 
@@ -61,6 +93,13 @@ class TaskVectorStore(AddableVectorStore, SearchableVectorStore, RemovableVector
         return results
 
     def remove(self, task_id: int, user_id: int):
+        """
+        Removes a task vector from the collection based on task and user ID.
+
+        Args:
+            task_id (int): ID of the task to remove.
+            user_id (int): ID of the user who owns the task.
+        """
         self.client.delete(
             collection_name=self.collection_name,
             points_selector=Filter(
