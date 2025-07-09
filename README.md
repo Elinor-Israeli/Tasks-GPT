@@ -1,59 +1,85 @@
 # 🧠 Tasks GPT
 
-Tasks GPT is a smart, AI-powered to-do list application that integrates natural language processing with GenAI to help users manage tasks effortlessly. Built with a FastAPI backend and a simple CLI, it allows users to interact using natural commands like “show me all the tasks I didn’t complete” or “add a new task to clean the kitchen.”
+Tasks GPT is a smart, AI-powered task assistant agent  that understands natural language. Say things like  
+“remind me to call mom tomorrow” or “show overdue tasks” — and Tasks GPT figures it out using **Gemini AI**.
 
-### 🚀 Features
+## 🚀 Features
 
-✍️ Natural Language Command Interpretation via Gemini AI
+- ✨ Natural Language Command Parsing (via Gemini 2.0 Flash)
+- ✅ Full CRUD Task Management (Create, Read, Update, Delete)
+- 📅 Due Date Tracking (overdue, upcoming, complete/incomplete)
+- 🔐 User Authentication
+- 🧠 Smart AI Editing: Detects what the user wants to edit
+- 🔍 Extracts Task Title/ID Automatically from natural phrases
+- 🧠 Vector Store + Semantic Search (via Qdrant)
+- 🐳 Dockerized Backend + PostgreSQL
+- ⚡ Async FastAPI + HTTP Services
+- 🧪 CLI-based task management with intelligent fallback flows
 
-✅ CRUD Task Management (Create, Read, Update, Delete)
+## 🧱 Tech Stack
+| Layer         | Technology             |
+|---------------|------------------------|
+| Frontend      | Python CLI             |
+| Backend       | FastAPI, SQLAlchemy    |
+| Database      | PostgreSQL             |
+| AI Model      | Gemini 2.0 Flash (Google SDK) |
+| Vector Search | Qdrant (optional)      |
+| Container     | Docker, Docker Compose |
+| Testing       | Pytest                 |
 
-📅 Due Date & Status Tracking (complete, incomplete, overdue, upcoming)
+## 🧬 Architecture Diagrams
+### Overall Project Structure (FastAPI, Services & Models)
+![TaskGPT UML 2](https://github.com/user-attachments/assets/d71d835c-7ebb-4335-89ef-3cd354b6c195)
 
-🔐 User Authentication
+###  Request Flow, AI & Vector Search Integration
+![TaskGPT UML 1](https://github.com/user-attachments/assets/633f66b8-6362-4fb8-950d-0a0b7c26e8c4)
 
-🐳 Dockerized FastAPI Backend with PostgreSQL
+###  Microservices Architecture
+![microservices chart](https://github.com/user-attachments/assets/12fc228e-554b-4db1-a7db-d2f4b1f8aadb)
 
-🌐 Async HTTP Client for efficient API calls
 
-### 🧱 Tech Stack
-- Frontend:  Python CLI 
+## 📦 Setup Instructions
 
-- Backend: FastAPI, SQLAlchemy
-
-- Database: PostgreSQL
-
-- AI Model: Gemini 2.0 Flash (via Google SDK)
-
-- Containerization: Docker, Docker-Compose
-
-- Test: Using Pytest
-
-### Setup Instructions
-1. Clone the repo
+### 1. Clone the repo
 ```
 git clone https://github.com/Elinor-Israeli/tasks-gpt.git
 cd tasks-gpt
 ```
-2. Configure environment variables
-   
-A .env file is a plain text file used to store environment variables — configuration settings your app needs, like API keys, database credentials, and other secrets — in key=value format. You will need to store the Gemini API key that you can get from this [link](https://ai.google.dev/gemini-api/docs/api-key?hl=he "link") in `client/.env` in the format shown below.
-> [!CAUTION]
-> Do not commit the .env file to GitHub (.env is in .gitignore to prevent it from happening).
+### 2. Set Up the Environment
+Create a .env file inside the client/ folder:
 
 ```
 GENAI_API_KEY=your_api_key
 ```
-3. Run the backend with Docker
+> [!NOTE]
+>🔐 Your .env is already in .gitignore. Never commit it.
+>🔑 Get your API key from: [Google Gemini Console](https://ai.google.dev/gemini-api/docs/api-key?hl=he "Google Gemini Console")
+
+### 3. Run the backend with Docker
 ```
 docker-compose up --build
 ```
-4. Run the CLI
+This will start:
+- The FastAPI app
+- A PostgreSQL database
+- Qdrant vector store for semantic task similarity
+  
+### 4. Run the CLI
 ```
 cd client
-python main.py
+python cli_client.py
 
 ```
+## 🛠 Developer Notes
+- AI logic lives in genai.py
+- Schemas in task_schema.py and user_schema.py
+- Request handlers like EditTaskUserRequest live in commands/
+- Semantic search handled by TaskVectorStore using Qdrant
+- Async services via HttpClient, TaskHttpService, and UserHttpService
+ 
+## 👩‍💻 Author
+Built by Elinor Israeli
+Exploring the blend of natural language, clean code, and intelligent systems.
 
 [comment]: <> (docker run --name my-postgres -e POSTGRES_USER=elinor -e POSTGRES_PASSWORD=elinor123 -e POSTGRES_DB=ToDoApp_DB -p 5432:5432 -d postgres)
 [comment]: <> (docker build -t fastapi .)
