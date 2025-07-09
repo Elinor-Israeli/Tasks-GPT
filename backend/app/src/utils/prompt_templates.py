@@ -163,7 +163,7 @@ Greet the user by saying "Hi {name_intro}" and then present 5 things you can hel
 3. Mark a task as done
 4. Delete a task
 5. Edit a task
-Make it feel friendly, not robotic. Add emojis if helpful. Return only the message.
+Make it feel friendly, not robotic. Add emojis if helpful. Return only the message. 
 """
 
 CONFIRMATION_TEMPLATE = """

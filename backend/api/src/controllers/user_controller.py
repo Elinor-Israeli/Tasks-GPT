@@ -11,7 +11,7 @@ from services.user_service import create_user, get_user, get_all_users, delete_u
 from schemas.user_schema import UserCreate, UserRead
 from utils.database import get_db
 from models import User
-from typing import List, Dict, Any, Optional
+from typing import List, Optional
 
 router: APIRouter = APIRouter() 
 
@@ -66,7 +66,7 @@ def read_users(db: Session = Depends(get_db)) -> List[UserRead]:
     return get_all_users(db)
 
 @router.get("/by-username/{username}")
-def get_user_by_username(username: str, db: Session = Depends(get_db)) -> User:
+def get_user_by_username(username: str, db: Session = Depends(get_db)) -> UserRead:
     """
     Retrieve a user by their username.
     

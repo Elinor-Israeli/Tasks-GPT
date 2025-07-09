@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock
-from backend.app.src.commands.mark_done_user_request import MarkDoneUserRequest
+from app.src.commands.mark_done_user_request import MarkDoneUserRequest
 
 class MockCommunicator:
     def __init__(self, inputs):
