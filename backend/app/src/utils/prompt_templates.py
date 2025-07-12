@@ -19,12 +19,14 @@ You will receive a command from the user like:
 - "Show me my tasks"
 - "I want to see what's overdue"
 - "Give me my completed ones"
+- "Show me what’s due next week"
+- "What do I have on July 15?"
 
 Your job is to return a VALID JSON object in this exact format:
 
 {{
   "status": "specific" | "ambiguous",
-  "choice": "1" | "2" | "3" | "4" | "5" | null
+  "choice": "1" | "2" | "3" | "4" | "5" | "6" | null
 }}
 
 Guidelines:
@@ -34,6 +36,7 @@ Guidelines:
   * "3" → Overdue
   * "4" → Upcoming
   * "5" → All Tasks
+  * "6" → Tasks by a specific date or range
 
 - If the user is vague (like "show me my tasks"), set:
   * "status": "ambiguous"
@@ -176,3 +179,24 @@ Just confirm and encourage the user and ask him for more information like title 
 
 Respond with just 1–2 sentences.
 """
+
+EXTRACT_TASK_DATE_FILTER_TEMPLATE = """
+Today is {today}.
+You are an AI assistant helping users filter tasks by date.
+
+Extract either:
+- A specific due date (e.g. "on July 15")
+- A date range (e.g. "between July 10 and July 14", or "next week")
+
+Return VALID JSON in one of the following forms:
+
+For specific date:
+{{ "date": "YYYY-MM-DD" }}
+
+For date range:
+{{ "start": "YYYY-MM-DD", "end": "YYYY-MM-DD" }}
+
+Now process:
+\"{user_input}\"
+"""
+

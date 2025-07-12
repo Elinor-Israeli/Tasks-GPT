@@ -23,7 +23,16 @@ class TaskHttpService:
     def __init__(self, client: HttpClient) -> None:
         self.client: HttpClient = client
 
-    async def get_tasks(self, user_id: int, done: Optional[bool] = None, overdue: bool = False, upcoming: bool = False) -> List[Dict[str, Any]]:
+    async def get_tasks(
+            self, 
+            user_id: int, 
+            done: Optional[bool] = None, 
+            overdue: bool = False, 
+            upcoming: bool = False,
+            date: Optional[str] = None,
+            start_date: Optional[str] = None,
+            end_date: Optional[str] = None
+        ) -> List[Dict[str, Any]]:
         """
         Retrieve tasks for a user with optional filtering.
         
@@ -32,6 +41,9 @@ class TaskHttpService:
             done: Optional filter for completion status
             overdue: Filter for overdue tasks
             upcoming: Filter for upcoming tasks
+            date: Filter for exact due date
+            start_date: Start of date range (inclusive)
+            end_date: End of date range (inclusive)
             
         Returns:
             List of task dictionaries
@@ -49,6 +61,15 @@ class TaskHttpService:
 
         if upcoming:
             params["upcoming"] = True
+
+        if date:
+            params["date"]
+
+        if start_date:
+            params["start_date"]      
+
+        if end_date:
+            params["end_date"]      
 
         response = await self.client.get("/tasks/", params=params)
         response.raise_for_status()

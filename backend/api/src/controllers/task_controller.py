@@ -20,6 +20,9 @@ def get_tasks_route(
     done: Optional[bool] = Query(None, description="Filter tasks by completion status"),
     overdue: Optional[bool] = Query(False, description="Filter overdue tasks"),
     upcoming: Optional[bool] = Query(False, description="Filter upcoming tasks"),
+    date: Optional[str] = Query(None, description="Filter tasks by exact due date (YYYY-MM-DD)"),
+    start_date: Optional[str] = Query(None, description="Start of due date range (YYYY-MM-DD)"),
+    end_date: Optional[str] = Query(None, description="End of due date range (YYYY-MM-DD)"),
     db: Session = Depends(get_db)
 ) -> List[TaskResponse]:
     """
@@ -30,6 +33,9 @@ def get_tasks_route(
         done: Optional filter for task completion status
         overdue: Filter for overdue tasks (default: False)
         upcoming: Filter for upcoming tasks (default: False)
+        date: Filter tasks due on a specific date
+        start_date: Start of the due date range
+        end_date: End of the due date range
         db: Database session dependency
         
     Returns:
@@ -38,7 +44,16 @@ def get_tasks_route(
     Raises:
         HTTPException: If user is not found or database error occurs
     """
-    return get_tasks(db, user_id, done=done, overdue=overdue, upcoming=upcoming)
+    return get_tasks(
+        session=db,
+        user_id=user_id,
+        done=done,
+        overdue=overdue,
+        upcoming=upcoming,
+        date=date,
+        start_date=start_date,
+        end_date=end_date
+    )
 
 @router.get("/{task_id}", response_model=TaskResponse)
 def get_task_by_id_route(task_id: int, db: Session = Depends(get_db)) -> TaskResponse:

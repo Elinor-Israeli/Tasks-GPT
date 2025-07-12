@@ -1,5 +1,5 @@
 from google import genai
-from typing import Optional, Union
+from typing import Optional, Dict
 from src.utils.menus import MenuChoice
 import json
 import time
@@ -14,7 +14,8 @@ from src.utils.prompt_templates import (
     EXTRACT_ID_OR_TITLE_TEMPLATE,
     EXTRACT_ID_OR_TITLE_TO_EDIT_TEMPLATE,
     MENU_TEMPLATE,
-    CONFIRMATION_TEMPLATE
+    CONFIRMATION_TEMPLATE,
+    EXTRACT_TASK_DATE_FILTER_TEMPLATE
 )
 
 class AICommandInterpreter:
@@ -106,6 +107,12 @@ class AICommandInterpreter:
         prompt = EXTRACT_ID_OR_TITLE_TO_EDIT_TEMPLATE.format(user_input=user_input, today=date.today())
         result = self._call_gemini(prompt)
         return self._safe_json_parse(result or '', {"task_id": None, "task_title": None})
+    
+    def extract_task_date_filter(self, user_input: str) -> Optional[Dict[str, str]]:
+        prompt = EXTRACT_TASK_DATE_FILTER_TEMPLATE.format(user_input=user_input, today=date.today())
+        result = self._call_gemini(prompt)
+        return self._safe_json_parse(result or '', {"date": None, "start": None, "end": None})
+
 
     # --- UI GENERATION ---
 
@@ -115,7 +122,5 @@ class AICommandInterpreter:
 
     def generate_conversational_response(self, user_input: str, intent: MenuChoice) -> str:
         prompt = CONFIRMATION_TEMPLATE.format(user_input=user_input, intent=intent.name)
-        logger.info(f'GC prompt- {prompt}')
         confirmation = self._call_gemini(prompt) or f"Okay! Let’s handle that '{intent.name.lower()}' request ✅"
-        logger.info(f'GC confirmation- {confirmation}')
         return confirmation

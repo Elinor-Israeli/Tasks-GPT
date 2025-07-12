@@ -12,7 +12,7 @@ from src.genai import AICommandInterpreter
 from src.http_services.task_http_service import TaskHttpService
 from src.utils.logger import logger
 from src.vector_store.interfaces import SearchableVectorStore, EditableVectorStore
-from src.utils.menus import view_options, ViewOption
+from src.utils.menus import view_options
 
 class ViewTasksUserRequest(UserRequest):
     """
@@ -25,7 +25,7 @@ class ViewTasksUserRequest(UserRequest):
         choice: User's view choice (1-5 for different filter options)
     """
     
-    def __init__(self, user_id: int, choice: str, *args) -> None:
+    def __init__(self, user_id: int, choice: str, communicator: Communicator, date_filter: Optional[Dict[str, str]] = None,) -> None:
         """
         Initialize a view tasks request.
         
@@ -35,6 +35,7 @@ class ViewTasksUserRequest(UserRequest):
         """
         super().__init__(user_id)
         self.choice: str = choice
+        self.date_filter = date_filter
     
     @classmethod
     async def create(cls, user_id: int, genai_client: AICommandInterpreter, user_input: str, vector_searcher: SearchableVectorStore, communicator: Communicator) -> Optional['ViewTasksUserRequest']:
@@ -57,8 +58,16 @@ class ViewTasksUserRequest(UserRequest):
         result: Dict[str, Any] = genai_client.interpret_view_task_command(user_input, view_options)
         if result["status"] == "error":
             return None
+        
+        if result["status"] == "specific" and result["choice"] == "6":
+            date_filter = genai_client.extract_task_date_filter(user_input)
+
+            if not date_filter:
+                date_input = await communicator.input("What date or range are you interested in?")
+                date_filter = genai_client.extract_task_date_filter(date_input)
+            return cls(user_id, "6", communicator, date_filter)
     
-        if result["status"] == "specific" and result["choice"] in {"1", "2", "3", "4", "5"}:
+        if result["status"] == "specific" and result["choice"] in {"1", "2", "3", "4", "5", "6"}:
             return ViewTasksUserRequest(user_id, result["choice"], communicator)
         
         follow_up_input: str = await communicator.input("")
@@ -67,7 +76,7 @@ class ViewTasksUserRequest(UserRequest):
         if follow_up_result["status"] == "specific" and follow_up_result["choice"] in {"1", "2", "3", "4", "5"}:
             return ViewTasksUserRequest(user_id, follow_up_result["choice"], communicator)
 
-        return ViewTasksUserRequest(user_id, follow_up_result["choice"])
+        return ViewTasksUserRequest(user_id, follow_up_result["choice"], date_filter)
 
     async def handle(self, task_service: TaskHttpService, vector_editor: EditableVectorStore, communicator: Communicator) -> None:
         """
@@ -87,6 +96,7 @@ class ViewTasksUserRequest(UserRequest):
             '3': {'overdue': True},
             '4': {'upcoming': True},
             '5': {},
+            '6': self.date_filter if self.date_filter else {}
         }.get(self.choice, {})
 
         tasks: List[Dict[str, Any]] = await task_service.get_tasks(user_id=self.user_id, **filter_kwargs)
