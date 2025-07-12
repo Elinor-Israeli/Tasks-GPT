@@ -24,7 +24,6 @@ Your job is to return a VALID JSON object in this exact format:
 
 {{
   "status": "specific" | "ambiguous",
-  "message": "Response to show the user",
   "choice": "1" | "2" | "3" | "4" | "5" | null
 }}
 
@@ -39,9 +38,7 @@ Guidelines:
 - If the user is vague (like "show me my tasks"), set:
   * "status": "ambiguous"
   * "choice": null
-  * "message": explain to th user his response is not specific enough and present to him all the option you support, for example
-    "I'm not sure what type of tasks you want to see. Do you want to see your Upcoming Tasks, All Tasks, Overdue Tasks?"
-
+ 
 
 IMPORTANT:
 - Do not return explanations or extra text — just the valid JSON object.

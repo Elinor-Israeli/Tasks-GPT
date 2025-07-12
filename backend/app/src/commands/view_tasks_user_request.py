@@ -25,7 +25,7 @@ class ViewTasksUserRequest(UserRequest):
         choice: User's view choice (1-5 for different filter options)
     """
     
-    def __init__(self, user_id: int, choice: str) -> None:
+    def __init__(self, user_id: int, choice: str, *args) -> None:
         """
         Initialize a view tasks request.
         
@@ -56,11 +56,8 @@ class ViewTasksUserRequest(UserRequest):
         """
         result: Dict[str, Any] = genai_client.interpret_view_task_command(user_input, view_options)
         if result["status"] == "error":
-            await communicator.output(result["message"])
             return None
     
-        await communicator.output(result["message"])
-
         if result["status"] == "specific" and result["choice"] in {"1", "2", "3", "4", "5"}:
             return ViewTasksUserRequest(user_id, result["choice"], communicator)
         
