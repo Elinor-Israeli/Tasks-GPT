@@ -42,7 +42,17 @@ def create_task(db: Session, task_data: TaskCreate) -> Task:
             detail=str(e.orig).lower()
         )
 
-def get_tasks(session: Session, user_id: int, done: Optional[bool] = None, overdue: bool = False, upcoming: bool = False) -> List[Task]:
+def get_tasks(
+        session: Session, 
+        user_id: int, 
+        done: Optional[bool] = None, 
+        overdue: bool = False, 
+        upcoming: bool = False, 
+        date: Optional[str] = None,
+        start_date: Optional[str] = None, 
+        end_date: Optional[str] = None
+    ) -> List[Task]:
+        
     """
     Retrieve tasks for a specific user with optional filtering.
     
@@ -52,6 +62,9 @@ def get_tasks(session: Session, user_id: int, done: Optional[bool] = None, overd
         done: Optional filter for task completion status (True/False/None for all)
         overdue: Filter for overdue tasks (default: False)
         upcoming: Filter for upcoming tasks (default: False)
+        date: Filter tasks due on a specific date (format: YYYY-MM-DD)
+        start_date: Filter tasks due after or on this date (inclusive)
+        end_date: Filter tasks due before or on this date (inclusive)
         
     Returns:
         List of task objects matching the criteria, ordered by ID descending
@@ -79,6 +92,13 @@ def get_tasks(session: Session, user_id: int, done: Optional[bool] = None, overd
             Task.due_date != None,
             Task.due_date > today.isoformat()
         )
+
+    if date:
+        query = query.filter(Task.due_date == date)
+
+    if start_date and end_date:
+        query = query.filter(Task.due_date.between(start_date, end_date))
+    
     return query.order_by(Task.id.desc()).all()    
 
 def get_task_by_id(db: Session, task_id: int) -> Optional[Task]:
@@ -167,3 +187,4 @@ def updated_task(
     session.commit()
     session.refresh(task)
     return task
+
