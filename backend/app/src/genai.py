@@ -15,7 +15,8 @@ from src.utils.prompt_templates import (
     EXTRACT_ID_OR_TITLE_TO_EDIT_TEMPLATE,
     MENU_TEMPLATE,
     CONFIRMATION_TEMPLATE,
-    EXTRACT_TASK_DATE_FILTER_TEMPLATE
+    EXTRACT_TASK_DATE_FILTER_TEMPLATE,
+    FOLLOWUP_TEMPLATE
 )
 
 class AICommandInterpreter:
@@ -116,8 +117,11 @@ class AICommandInterpreter:
 
     # --- UI GENERATION ---
 
-    def generate_conversational_menu(self, username: Optional[str] = None) -> str:
-        prompt = MENU_TEMPLATE.format(name_intro=f"{username}," if username else "there")
+    def generate_conversational_menu(self, username: Optional[str] = None, first_time: bool = True) -> str:
+        if first_time:
+            prompt = MENU_TEMPLATE.format(name_intro=f"{username}," if username else "there")
+        else:
+            prompt = FOLLOWUP_TEMPLATE
         return self._call_gemini(prompt) or "Hi! 😊 What would you like to do?"
 
     def generate_conversational_response(self, user_input: str, intent: MenuChoice) -> str:
