@@ -82,11 +82,12 @@ class AppService:
             vector_store=self.vector_store
         )
 
+        first_time = True
         while True:
             try:
-                menu_prompt: str = self.genai_client.generate_conversational_menu(username=username)
+                menu_prompt: str = self.genai_client.generate_conversational_menu(username=username, first_time=first_time)
                 await communicator.output(menu_prompt)
-
+                first_time = False
                 options: str = """
                 1. View Tasks
                 2. Add Task
