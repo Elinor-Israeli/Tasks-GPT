@@ -182,7 +182,7 @@ You interpreted their intent as: {intent}
 Write a short, warm response confirming what the user wants to do.
 Example: “Sure! Let's edit that task. ✏️”
 Keep it conversational and kind. Emojis are okay. Do not give instructions here.
-Just confirm and encourage the user and ask him for more information like title or ID
+Just confirm and encourage the user .
 
 Respond with just 1–2 sentences.
 """

@@ -114,7 +114,7 @@ class EditTaskUserRequest(UserRequest):
         return EditTaskUserRequest(user_id, task_id, extracted)
 
 
-    async def handle(self, task_service: TaskHttpService, vector_editor: EditableVectorStore, communicator: Communicator) -> None:
+    async def handle(self, task_service: TaskHttpService, vector_editor: EditableVectorStore, communicator: Communicator) -> bool:
         """
         Execute the edit task request.
         
@@ -125,6 +125,9 @@ class EditTaskUserRequest(UserRequest):
             task_service: Service for task-related operations
             vector_editor: Vector store for updating task embeddings
             communicator: Communication interface for user interaction
+
+        Returns:
+        bool: True if task was successfully added, False otherwise.    
         """
         data: Dict[str, Any] = {}
         payload_update: Dict[str, Optional[str]] = {}
@@ -134,6 +137,7 @@ class EditTaskUserRequest(UserRequest):
             data["title"] = title
             payload_update["title"] = title
             await communicator.output(f"Okay, updating the title to: '{title}' ✏️")
+            return True
 
         due_date: Optional[str] = self.extracted_data.get("due_date")
         if due_date:
@@ -142,13 +146,14 @@ class EditTaskUserRequest(UserRequest):
                 data["due_date"] = due_date
                 payload_update["due_date"] = due_date
                 await communicator.output(f"Setting the new due date to: {due_date} 📆")
+                return True
             except ValueError:
                 await communicator.output("Oops! That date format looks off. Use YYYY-MM-DD format please 🙏")
-                return
+                return False
 
         if not data:
             await communicator.output("Hmm, I didn't get any changes to apply. Want to try again?")
-            return
+            return False
 
         await task_service.update_task(int(self.task_id), data)
         vector_editor.add(

@@ -73,7 +73,7 @@ class MarkDoneUserRequest(UserRequest):
 
         return MarkDoneUserRequest(user_id, task_id)
     
-    async def handle(self, task_service: TaskHttpService, vector_editor: EditableVectorStore, communicator: Communicator) -> None:
+    async def handle(self, task_service: TaskHttpService, vector_editor: EditableVectorStore, communicator: Communicator) -> bool:
         """
         Execute the mark done request.
         
@@ -83,6 +83,8 @@ class MarkDoneUserRequest(UserRequest):
             task_service: Service for task-related operations
             vector_editor: Vector store for updating task embeddings
             communicator: Communication interface for user interaction
+        Returns:
+        bool: True if task was successfully added, False otherwise.    
         """
         logger.debug(f"Marking task by ID: {self.task_id}")
         task: Optional[Dict[str, Any]] = await task_service.get_task_by_id(self.task_id)
@@ -90,5 +92,7 @@ class MarkDoneUserRequest(UserRequest):
         if task:
             await task_service.update_task(task["id"], {"done": True})
             await communicator.output(f"Task '{task['title']}' marked as done!")
+            return True
         else:
             logger.error("Task not found.")
+            return False

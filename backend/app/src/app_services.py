@@ -85,9 +85,12 @@ class AppService:
         first_time = True
         while True:
             try:
-                menu_prompt: str = self.genai_client.generate_conversational_menu(username=username, first_time=first_time)
-                await communicator.output(menu_prompt)
+                menu_prompt: str = self.genai_client.generate_conversational_menu(
+                    username=username,
+                    first_time=first_time
+                )
                 first_time = False
+
                 options: str = """
                 1. View Tasks
                 2. Add Task
@@ -95,9 +98,7 @@ class AppService:
                 4. Delete Task
                 5. Edit Task
                 """
-                user_input: str = (await communicator.input("")).strip()
-
-                logger.info(f"user_input: {user_input}")
+                user_input: str = (await communicator.input(menu_prompt)).strip()
 
                 choice: MenuChoice = self.genai_client.interpret_command(user_input, options)
 
@@ -114,11 +115,20 @@ class AppService:
                     await communicator.output("Sorry, I couldn't figure that out. Maybe try a different phrase?")
                     continue
 
-                await request.handle(self.task_service, self.vector_store, communicator)
+                success = await request.handle(self.task_service, self.vector_store, communicator)
+
+                if success:
+                    followup = self.genai_client.generate_conversational_menu(username=username, first_time=False)
+                    await communicator.output(followup)
+                else:
+                    await communicator.output("⚠️ Something went wrong with your request. Try again!")
+                    first_time = True
+
 
             except Exception as e:
                 logger.error(f"Unexpected error occurred: {e}")
                 await communicator.output("⚠️ Something went wrong. Please try again.")
+                first_time = True
 
     async def _login_or_signup(self, communicator: Communicator) -> Tuple[int, str]:
         """

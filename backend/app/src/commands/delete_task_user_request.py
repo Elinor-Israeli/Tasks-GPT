@@ -77,7 +77,7 @@ class DeleteTaskUserRequest(UserRequest):
 
         return DeleteTaskUserRequest(user_id, task_id, task_title)
 
-    async def handle(self, task_service: TaskHttpService, vector_editor: EditableVectorStore, communicator: Communicator) -> None:
+    async def handle(self, task_service: TaskHttpService, vector_editor: EditableVectorStore, communicator: Communicator) -> bool:
         """
         Execute the delete task request.
         
@@ -88,6 +88,9 @@ class DeleteTaskUserRequest(UserRequest):
             task_service: Service for task-related operations
             vector_editor: Vector store for removing task embeddings
             *args: Additional arguments (unused)
+            
+        Returns:
+        bool: True if task was successfully added, False otherwise.    
         """
         
         task: Optional[Dict[str, Any]] = None
@@ -112,5 +115,7 @@ class DeleteTaskUserRequest(UserRequest):
 
             vector_editor.remove(task_id=task["id"], user_id=self.user_id)
             logger.debug(f"Removed task {task['id']} from vector store.")
+            return True
         else:
             await communicator.output("Task not found.")
+            return False

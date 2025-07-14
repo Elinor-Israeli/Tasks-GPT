@@ -78,7 +78,7 @@ class ViewTasksUserRequest(UserRequest):
 
         return ViewTasksUserRequest(user_id, follow_up_result["choice"], date_filter)
 
-    async def handle(self, task_service: TaskHttpService, vector_editor: EditableVectorStore, communicator: Communicator) -> None:
+    async def handle(self, task_service: TaskHttpService, vector_editor: EditableVectorStore, communicator: Communicator) -> bool:
         """
         Execute the view tasks request.
         
@@ -88,6 +88,8 @@ class ViewTasksUserRequest(UserRequest):
         Args:
             task_service: Service for task-related operations
             *args: Additional arguments (unused)
+        Returns:
+        bool: True if task was successfully added, False otherwise.    
         """
         
         if self.choice == "6" and self.date_filter:
@@ -111,7 +113,7 @@ class ViewTasksUserRequest(UserRequest):
         
         if not tasks:
             await communicator.output("No tasks found for this option.")
-            return
+            return False
 
         tasks = sorted(tasks, key=lambda x: x['id'], reverse=True)
 
@@ -120,3 +122,4 @@ class ViewTasksUserRequest(UserRequest):
             status: str = "✅" if task['done'] else "❌"
             due: str = f"(Due: {task['due_date']})" if task["due_date"] else ""
             await communicator.output(f"{task['id']}. {task['title']} {due} - {status}")
+            return True

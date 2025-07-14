@@ -83,7 +83,7 @@ class AddTaskUserRequest(UserRequest):
 
         return AddTaskUserRequest(user_id, title, due_date)
 
-    async def handle(self, task_service: TaskHttpService, vector_editor: EditableVectorStore, communicator: Communicator) -> None:
+    async def handle(self, task_service: TaskHttpService, vector_editor: EditableVectorStore, communicator: Communicator) -> bool:
         """
         Execute the add task request.
         
@@ -94,6 +94,9 @@ class AddTaskUserRequest(UserRequest):
             task_service: Service for task-related operations
             vector_editor: Vector store for adding task embeddings
             communicator: Communication interface for user interaction
+            
+        Returns:
+        bool: True if task was successfully added, False otherwise.
         """
 
         try:
@@ -110,6 +113,7 @@ class AddTaskUserRequest(UserRequest):
             )
 
             await communicator.output(f"Task '{self.title}' added with due date {self.due_date}!")
+            return True
 
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 400:
@@ -119,5 +123,7 @@ class AddTaskUserRequest(UserRequest):
                     raise ValueError("A task with this title already exists.")
 
                 logger.error(f"Failed to add task: {error_detail}")
+                return False
             else:
                 logger.error(f"Unexpected error while adding task: {e}")
+                return False
