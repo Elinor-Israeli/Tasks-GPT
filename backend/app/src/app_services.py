@@ -105,7 +105,6 @@ class AppService:
                     continue
 
                 response: str = self.genai_client.generate_conversational_response(user_input, intent=choice)
-                logger.info(f'app_services respond:{response}')
                 await communicator.output(response)
 
                 request: Optional[UserRequest] = await factory.create_request(choice, user_input, communicator)

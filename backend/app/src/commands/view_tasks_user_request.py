@@ -89,7 +89,13 @@ class ViewTasksUserRequest(UserRequest):
             task_service: Service for task-related operations
             *args: Additional arguments (unused)
         """
-
+        
+        if self.choice == "6" and self.date_filter:
+            self.date_filter = {
+                k.replace("start", "start_date").replace("end", "end_date") if k in {"start", "end"} else k: v
+                for k, v in self.date_filter.items()
+            }
+            
         filter_kwargs: Dict[str, Any] = {
             '1': {'done': True},
             '2': {'done': False},
@@ -98,6 +104,8 @@ class ViewTasksUserRequest(UserRequest):
             '5': {},
             '6': self.date_filter if self.date_filter else {}
         }.get(self.choice, {})
+
+       
 
         tasks: List[Dict[str, Any]] = await task_service.get_tasks(user_id=self.user_id, **filter_kwargs)
         
